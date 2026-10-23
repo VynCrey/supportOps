@@ -19,20 +19,8 @@ def _normalizar(texto: str) -> str:
     return "".join(letra for letra in texto if not unicodedata.combining(letra))
 
 
-def pide_credenciales(borrador: dict, faltantes: list[str] | None = None) -> bool:
-    """Detecta pedidos de secretos en preguntas, faltantes o texto propuesto."""
-    preguntas = borrador.get("preguntas", [])
-    faltantes = faltantes or []
-    if any(
-        SECRETOS.search(_normalizar(item))
-        for item in [*preguntas, *faltantes]
-        if isinstance(item, str)
-    ):
-        return True
-
-    texto = borrador.get("texto", "")
-    if not isinstance(texto, str):
-        return False
+def _pide_secreto(texto: str) -> bool:
+    """Distingue pedir el secreto de mencionar un token para diagnosticarlo."""
     for frase in re.split(r"[.!?\n]", _normalizar(texto)):
         for pedido in PEDIDOS.finditer(frase):
             antes = frase[max(0, pedido.start() - 12):pedido.start()]
@@ -41,3 +29,10 @@ def pide_credenciales(borrador: dict, faltantes: list[str] | None = None) -> boo
             if SECRETOS.search(frase[pedido.end():pedido.end() + 100]):
                 return True
     return False
+
+
+def pide_credenciales(borrador: dict, faltantes: list[str] | None = None) -> bool:
+    """Detecta pedidos de secretos en texto, preguntas y datos faltantes."""
+    campos = [borrador.get("texto", ""), *(borrador.get("preguntas") or []),
+              *(faltantes or [])]
+    return any(_pide_secreto(item) for item in campos if isinstance(item, str))
