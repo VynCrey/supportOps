@@ -66,3 +66,22 @@ Los prompts de `analysis.py` no son idénticos a los del kit, así que el efecto
 - Son 3 tickets de conocimiento y 5 juicios del supervisor: indican tendencias, no miden tasas.
 - El triage fijo de `probar_rol.py` contamina los resultados de conocimiento que dependen de la categoría.
 - Tiempos medidos en una sola máquina; varían entre 0.6 y 6.1 s por llamada y 11–13 s por ticket.
+
+## 7. Primera corrida integrada (repo de Cristian, 23/10/2026)
+
+Ticket 3 de la muestra de `bootstrap.py` ("La API devuelve error 401 con el token"), analizado desde `/docs` con `qwen2.5:3b`, la KB cargada en PostgreSQL y los prompts de `analysis.py`. Ejecución 1.
+
+| Rol | Salida | Seg | Lectura |
+|---|---|---|---|
+| Triage | `api` · faltantes vacíos | 59.0 | ✓ correcto (en el laboratorio había dado `seguridad`). El tiempo es la carga del modelo en la primera llamada |
+| Conocimiento | `hibrido` · motivo: "Necesito saber si el error es frecuente y si hay un token expirado o incorrecto" | 1.4 | El motivo es una oración pero explica el problema, no la herramienta. Con un código exacto se esperaba `lexical` |
+| Recuperación | KB-013, KB-014, KB-016 | — | Viene de PostgreSQL (`base_conocimiento: conectada`). KB-014 (error 403) entra por la parte de grafo; KB-041 (reloj desfasado), que `lexical` trae tercero, queda afuera |
+| Borrador | texto = el ticket repetido · citas `KB-013`, `KB-016` · los pasos del procedimiento puestos en `preguntas` | 2.5 | Citas correctas (el problema del laboratorio no apareció). El texto no propone nada |
+| Supervisor (modelo) | motivos primero, decisión `revisar` | 2.6 | El orden nuevo del esquema se respetó. Los motivos repiten las preguntas |
+| Gate | **`bloquear`** · "Solicitud de credenciales detectada" | — | Falso positivo, ver abajo |
+
+**Por qué se bloqueó.** `pide_credenciales` (`safety.py`) bloquea toda pregunta o faltante que contenga una palabra como "token", aunque no pida su valor. Lo disparó "Revisar vencimiento del token y entorno configurado". Reproducido aparte: la misma frase en `texto` no bloquea, porque ahí la regla exige un verbo de pedido seguido de un secreto; "Enviame tu token" en `preguntas` sí bloquea, como corresponde.
+
+**Consecuencia para H5.** En los tickets de error 401 casi cualquier pregunta menciona el token, y un borrador bloqueado solo admite rechazo. Hasta que se ajuste la regla o el borrador deje de poner pasos en `preguntas`, esos tickets no permiten registrar una aprobación ni una edición.
+
+**Detalle cosmético.** En `hibrido`, KB-013 muestra `score: 0` porque la fusión conserva la copia del documento que llega por el grafo. El orden lo decide `fusion_score`. Pasa igual en el laboratorio.
