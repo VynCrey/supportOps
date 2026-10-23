@@ -156,13 +156,17 @@ def analisis():
         st.write(f"**Categoría:** {triage.get('categoria', 'sin clasificar')}")
         st.write(f"**Decisión automática:** {supervision.get('decision', 'sin decisión')}")
         st.write(f"**Borrador:** {borrador.get('texto', '')}")
-        st.write("**Evidencia usada**")
+        st.write(f"**Citas:** {', '.join(borrador.get('citas', [])) or 'ninguna'}")
+        st.write("**Evidencia consultada**")
         if resultado.get("evidencia"):
             for documento in resultado["evidencia"]:
-                st.write(f"- {documento.get('id', '?')}: {documento.get('titulo', '')}")
+                etiqueta = f"{documento.get('id', '?')} · {documento.get('titulo', '')}"
+                with st.expander(etiqueta):
+                    st.caption(f"Versión {documento.get('version', 'sin indicar')}")
+                    st.write(documento.get("texto", "Sin contenido"))
         else:
             st.caption("No hay documentos recuperados. La respuesta necesita revisión humana.")
-        with st.expander("Ver análisis completo"):
+        with st.expander("Ver recorrido de agentes y análisis completo"):
             st.json(resultado)
 
     if ejecucion.get("alerta_seguridad"):
@@ -187,6 +191,7 @@ def analisis():
                 {"decision": decision, "texto_final": texto_final, "motivo": motivo},
             )
             st.success(f"Revisión #{revision['id']} guardada: {revision['decision']}.")
+            st.caption("Se guardó la decisión. No se envió ningún mensaje al cliente.")
             st.rerun()
         except APIError as error:
             mostrar_error(error)

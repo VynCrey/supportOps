@@ -14,6 +14,8 @@ puede ampliarla a 500 clientes, 20.000 tickets y 60.000 eventos. La base
 `supportops_final` y la contrasena de PostgreSQL son locales; no se suben a Git.
 Cada colaborador crea su propia base ejecutando `bootstrap.py` tras instalar
 `requirements.txt`. Ver instrucciones completas en el README.
+La [ficha de datos](ficha_datos.md) y [consultas EDA](consultas_eda.sql)
+documentan origen, conteos y limitaciones de los casos ficticios.
 
 ## Contrato de recuperacion
 

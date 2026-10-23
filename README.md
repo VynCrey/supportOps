@@ -24,6 +24,8 @@ y usa otra base de datos; no forma parte de este repositorio.
 - `generar_datos.py` puede ampliar la muestra hasta 500 clientes, 20.000
   tickets y 60.000 eventos ficticios. No agrega documentos: esa parte corresponde
   a la base de conocimiento de Marco.
+- `eda.py` imprime tres hallazgos descriptivos calculados sobre la base local;
+  el SQL reproducible y las limitaciones estan documentados en `docs/`.
 
 ## Preparar en Windows
 
@@ -50,6 +52,7 @@ Para ver los conteos y luego generar el volumen final:
 ```powershell
 .\.venv\Scripts\python.exe .\generar_datos.py
 .\.venv\Scripts\python.exe .\generar_datos.py --aplicar
+.\.venv\Scripts\python.exe .\eda.py
 ```
 
 La segunda orden agrega los datos dentro de una transaccion y confirma los
@@ -57,6 +60,9 @@ conteos antes de guardar. Una nueva ejecucion, si ya alcanzo el objetivo, no
 duplica filas. Si agregaste tickets manualmente sin sus tres eventos, se detiene
 para que revises esa diferencia. Hacelo sobre la base ficticia, no sobre datos
 reales.
+El generador usa semilla 42, 18 familias y 54 frases base. La
+[ficha de datos](docs/ficha_datos.md) explica origen, fechas y limites. `eda.py`
+lee la base y calcula los hallazgos; no inventa resultados antes de ejecutarse.
 
 ## Probar la API
 
