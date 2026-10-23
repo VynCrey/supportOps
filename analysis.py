@@ -38,8 +38,11 @@ class Borrador(Salida):
 
 
 class Supervision(Salida):
-    decision: Literal["listo", "revisar", "bloquear"]
+    # motivos va antes que decision: el esquema JSON sigue este orden y el modelo
+    # escribe primero el razonamiento. Con decision primero aprobo una afirmacion
+    # sin respaldo (docs/p8_resultados.md, seccion 2).
     motivos: list[str]
+    decision: Literal["listo", "revisar", "bloquear"]
 
 
 def aplicar_gate(borrador: dict, evidencia: list[dict], categoria: str,
@@ -96,7 +99,8 @@ def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve) -> dict:
         "conocimiento",
         "Elige lexical para palabras exactas, grafo para relaciones de categoria "
         "o hibrido para combinar ambos. La consulta debe ser breve. "
-        "Busca sintomas y errores; no solicites valores de credenciales.",
+        "Busca sintomas y errores; no solicites valores de credenciales. "
+        "En motivo explica en una frase por que elegiste esa herramienta.",
         {"ticket": publico, "triage": triage},
         PlanBusqueda,
     )

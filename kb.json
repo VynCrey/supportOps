@@ -1,0 +1,534 @@
+{
+ "documentos": [
+  {
+   "id": "KB-001",
+   "categoria": "acceso",
+   "titulo": "Recuperar acceso - Guia operador",
+   "version": 1,
+   "texto": "Usar Recuperar acceso desde la pantalla de ingreso. No pedir contrasenas. Si el enlace vencio, solicitar uno nuevo."
+  },
+  {
+   "id": "KB-002",
+   "categoria": "acceso",
+   "titulo": "Cuenta bloqueada - Guia operador",
+   "version": 1,
+   "texto": "Consultar el estado de la cuenta con soporte. No prometer desbloqueo automatico ni pedir credenciales."
+  },
+  {
+   "id": "KB-003",
+   "categoria": "acceso",
+   "titulo": "Enlace vencido - Guia operador",
+   "version": 1,
+   "texto": "Solicitar un nuevo enlace de recuperacion. Indicar el mensaje exacto de error sin compartir el enlace privado."
+  },
+  {
+   "id": "KB-004",
+   "categoria": "acceso",
+   "titulo": "Recuperar acceso - FAQ cliente",
+   "version": 1,
+   "texto": "Usar Recuperar acceso desde la pantalla de ingreso. No pedir contrasenas. Si el enlace vencio, solicitar uno nuevo."
+  },
+  {
+   "id": "KB-005",
+   "categoria": "acceso",
+   "titulo": "Cuenta bloqueada - FAQ cliente",
+   "version": 1,
+   "texto": "Consultar el estado de la cuenta con soporte. No prometer desbloqueo automatico ni pedir credenciales."
+  },
+  {
+   "id": "KB-006",
+   "categoria": "acceso",
+   "titulo": "Enlace vencido - FAQ cliente",
+   "version": 1,
+   "texto": "Solicitar un nuevo enlace de recuperacion. Indicar el mensaje exacto de error sin compartir el enlace privado."
+  },
+  {
+   "id": "KB-007",
+   "categoria": "facturacion",
+   "titulo": "Factura - Guia operador",
+   "version": 1,
+   "texto": "Consultar Facturacion en el portal demo. Solicitar periodo y numero de comprobante sin datos bancarios."
+  },
+  {
+   "id": "KB-008",
+   "categoria": "facturacion",
+   "titulo": "Cobro duplicado - Guia operador",
+   "version": 1,
+   "texto": "Solicitar las referencias de los dos cobros. Escalar a facturacion. No prometer un reembolso."
+  },
+  {
+   "id": "KB-009",
+   "categoria": "facturacion",
+   "titulo": "Datos del comprobante - Guia operador",
+   "version": 1,
+   "texto": "Solicitar numero de comprobante y campo a corregir. La modificacion debe aprobarla el area de facturacion."
+  },
+  {
+   "id": "KB-010",
+   "categoria": "facturacion",
+   "titulo": "Factura - FAQ cliente",
+   "version": 1,
+   "texto": "Consultar Facturacion en el portal demo. Solicitar periodo y numero de comprobante sin datos bancarios."
+  },
+  {
+   "id": "KB-011",
+   "categoria": "facturacion",
+   "titulo": "Cobro duplicado - FAQ cliente",
+   "version": 1,
+   "texto": "Solicitar las referencias de los dos cobros. Escalar a facturacion. No prometer un reembolso."
+  },
+  {
+   "id": "KB-012",
+   "categoria": "facturacion",
+   "titulo": "Datos del comprobante - FAQ cliente",
+   "version": 1,
+   "texto": "Solicitar numero de comprobante y campo a corregir. La modificacion debe aprobarla el area de facturacion."
+  },
+  {
+   "id": "KB-013",
+   "categoria": "api",
+   "titulo": "Error 401 token - Guia operador",
+   "version": 1,
+   "texto": "Revisar vencimiento del token y entorno configurado. Nunca pedir que el cliente copie el token. Solicitar codigo y hora del error."
+  },
+  {
+   "id": "KB-014",
+   "categoria": "api",
+   "titulo": "Error 403 permisos - Guia operador",
+   "version": 1,
+   "texto": "Verificar permisos requeridos por el endpoint. Solicitar nombre del endpoint sin token. Escalar si faltan permisos."
+  },
+  {
+   "id": "KB-015",
+   "categoria": "api",
+   "titulo": "Error 429 limite - Guia operador",
+   "version": 1,
+   "texto": "Revisar limite de peticiones del plan demo. Solicitar hora y frecuencia. No aumentar limites sin autorizacion."
+  },
+  {
+   "id": "KB-016",
+   "categoria": "api",
+   "titulo": "Error 401 token - FAQ cliente",
+   "version": 1,
+   "texto": "Revisar vencimiento del token y entorno configurado. Nunca pedir que el cliente copie el token. Solicitar codigo y hora del error."
+  },
+  {
+   "id": "KB-017",
+   "categoria": "api",
+   "titulo": "Error 403 permisos - FAQ cliente",
+   "version": 1,
+   "texto": "Verificar permisos requeridos por el endpoint. Solicitar nombre del endpoint sin token. Escalar si faltan permisos."
+  },
+  {
+   "id": "KB-018",
+   "categoria": "api",
+   "titulo": "Error 429 limite - FAQ cliente",
+   "version": 1,
+   "texto": "Revisar limite de peticiones del plan demo. Solicitar hora y frecuencia. No aumentar limites sin autorizacion."
+  },
+  {
+   "id": "KB-019",
+   "categoria": "exportacion",
+   "titulo": "Archivo CSV - Guia operador",
+   "version": 1,
+   "texto": "Verificar filtros y rango de fechas antes de exportar. Solicitar el error exacto y formato elegido."
+  },
+  {
+   "id": "KB-020",
+   "categoria": "exportacion",
+   "titulo": "Exportacion pendiente - Guia operador",
+   "version": 1,
+   "texto": "Consultar el estado de la tarea en el portal demo. Solicitar id de tarea. No afirmar que ya termino."
+  },
+  {
+   "id": "KB-021",
+   "categoria": "exportacion",
+   "titulo": "Columnas faltantes - Guia operador",
+   "version": 1,
+   "texto": "Verificar columnas seleccionadas y permisos del usuario. Solicitar nombres de columnas, sin adjuntar datos privados."
+  },
+  {
+   "id": "KB-022",
+   "categoria": "exportacion",
+   "titulo": "Archivo CSV - FAQ cliente",
+   "version": 1,
+   "texto": "Verificar filtros y rango de fechas antes de exportar. Solicitar el error exacto y formato elegido."
+  },
+  {
+   "id": "KB-023",
+   "categoria": "exportacion",
+   "titulo": "Exportacion pendiente - FAQ cliente",
+   "version": 1,
+   "texto": "Consultar el estado de la tarea en el portal demo. Solicitar id de tarea. No afirmar que ya termino."
+  },
+  {
+   "id": "KB-024",
+   "categoria": "exportacion",
+   "titulo": "Columnas faltantes - FAQ cliente",
+   "version": 1,
+   "texto": "Verificar columnas seleccionadas y permisos del usuario. Solicitar nombres de columnas, sin adjuntar datos privados."
+  },
+  {
+   "id": "KB-025",
+   "categoria": "notificaciones",
+   "titulo": "Correo no recibido - Guia operador",
+   "version": 1,
+   "texto": "Revisar spam y preferencias de avisos. Solicitar hora aproximada y tipo de aviso."
+  },
+  {
+   "id": "KB-026",
+   "categoria": "notificaciones",
+   "titulo": "Avisos duplicados - Guia operador",
+   "version": 1,
+   "texto": "Solicitar hora y tipo de aviso duplicado. Revisar suscripciones duplicadas en el portal demo."
+  },
+  {
+   "id": "KB-027",
+   "categoria": "notificaciones",
+   "titulo": "Preferencias - Guia operador",
+   "version": 1,
+   "texto": "Usar Preferencias de notificaciones en el perfil. Guardar cambios y realizar una prueba controlada."
+  },
+  {
+   "id": "KB-028",
+   "categoria": "notificaciones",
+   "titulo": "Correo no recibido - FAQ cliente",
+   "version": 1,
+   "texto": "Revisar spam y preferencias de avisos. Solicitar hora aproximada y tipo de aviso."
+  },
+  {
+   "id": "KB-029",
+   "categoria": "notificaciones",
+   "titulo": "Avisos duplicados - FAQ cliente",
+   "version": 1,
+   "texto": "Solicitar hora y tipo de aviso duplicado. Revisar suscripciones duplicadas en el portal demo."
+  },
+  {
+   "id": "KB-030",
+   "categoria": "notificaciones",
+   "titulo": "Preferencias - FAQ cliente",
+   "version": 1,
+   "texto": "Usar Preferencias de notificaciones en el perfil. Guardar cambios y realizar una prueba controlada."
+  },
+  {
+   "id": "KB-031",
+   "categoria": "seguridad",
+   "titulo": "Acceso desconocido - Guia operador",
+   "version": 1,
+   "texto": "Escalar inmediatamente al equipo de seguridad. No pedir contrasenas ni codigos de segundo factor."
+  },
+  {
+   "id": "KB-032",
+   "categoria": "seguridad",
+   "titulo": "Phishing - Guia operador",
+   "version": 1,
+   "texto": "No abrir enlaces sospechosos. Escalar a seguridad. Solicitar una descripcion sin secretos ni adjuntos privados."
+  },
+  {
+   "id": "KB-033",
+   "categoria": "seguridad",
+   "titulo": "Sesion desconocida - Guia operador",
+   "version": 1,
+   "texto": "Escalar a seguridad y seguir su procedimiento. No afirmar que el incidente esta resuelto."
+  },
+  {
+   "id": "KB-034",
+   "categoria": "seguridad",
+   "titulo": "Acceso desconocido - FAQ cliente",
+   "version": 1,
+   "texto": "Escalar inmediatamente al equipo de seguridad. No pedir contrasenas ni codigos de segundo factor."
+  },
+  {
+   "id": "KB-035",
+   "categoria": "seguridad",
+   "titulo": "Phishing - FAQ cliente",
+   "version": 1,
+   "texto": "No abrir enlaces sospechosos. Escalar a seguridad. Solicitar una descripcion sin secretos ni adjuntos privados."
+  },
+  {
+   "id": "KB-036",
+   "categoria": "seguridad",
+   "titulo": "Sesion desconocida - FAQ cliente",
+   "version": 1,
+   "texto": "Escalar a seguridad y seguir su procedimiento. No afirmar que el incidente esta resuelto."
+  },
+  {
+   "id": "KB-037",
+   "categoria": "general",
+   "titulo": "Politica general demo",
+   "version": 1,
+   "texto": "Solicitar detalles cuando falte informacion. La respuesta requiere revision humana. No prometer plazos."
+  },
+  {
+   "id": "KB-038",
+   "categoria": "general",
+   "titulo": "Politica general demo",
+   "version": 1,
+   "texto": "Solicitar detalles cuando falte informacion. La respuesta requiere revision humana. No prometer plazos."
+  },
+  {
+   "id": "KB-039",
+   "categoria": "general",
+   "titulo": "Politica general demo",
+   "version": 1,
+   "texto": "Solicitar detalles cuando falte informacion. La respuesta requiere revision humana. No prometer plazos."
+  },
+  {
+   "id": "KB-040",
+   "categoria": "general",
+   "titulo": "Politica general demo",
+   "version": 1,
+   "texto": "Solicitar detalles cuando falte informacion. La respuesta requiere revision humana. No prometer plazos."
+  },
+  {
+   "id": "KB-041",
+   "categoria": "api",
+   "titulo": "Error 401 por reloj desfasado - Guia operador",
+   "version": 1,
+   "texto": "Verificar la hora del sistema que firma el token. Solicitar hora exacta del error y zona horaria. No pedir el token. Escalar si la diferencia supera cinco minutos."
+  },
+  {
+   "id": "KB-042",
+   "categoria": "api",
+   "titulo": "Rotacion programada de tokens - Guia operador",
+   "version": 1,
+   "texto": "Explicar el calendario de rotacion de credenciales del plan demo. No aplica a errores de autenticacion puntuales. Derivar a Error 401 si el cliente reporta un codigo."
+  },
+  {
+   "id": "KB-043",
+   "categoria": "exportacion",
+   "titulo": "Exportacion por correo (retirado) - Guia operador",
+   "version": 1,
+   "texto": "Procedimiento retirado. El envio por correo ya no esta disponible. Usar la descarga directa descrita en la version vigente."
+  },
+  {
+   "id": "KB-044",
+   "categoria": "exportacion",
+   "titulo": "Exportacion por descarga directa (vigente) - Guia operador",
+   "version": 2,
+   "texto": "Indicar la descarga directa desde el portal demo. Solicitar id de tarea y formato. Reemplaza al envio por correo."
+  }
+ ],
+ "relaciones": [
+  {
+   "origen": "KB-044",
+   "relacion": "reemplaza_a",
+   "destino": "KB-043"
+  },
+  {
+   "origen": "categoria:acceso",
+   "relacion": "documenta",
+   "destino": "KB-001"
+  },
+  {
+   "origen": "categoria:acceso",
+   "relacion": "documenta",
+   "destino": "KB-002"
+  },
+  {
+   "origen": "categoria:acceso",
+   "relacion": "documenta",
+   "destino": "KB-003"
+  },
+  {
+   "origen": "categoria:acceso",
+   "relacion": "documenta",
+   "destino": "KB-004"
+  },
+  {
+   "origen": "categoria:acceso",
+   "relacion": "documenta",
+   "destino": "KB-005"
+  },
+  {
+   "origen": "categoria:acceso",
+   "relacion": "documenta",
+   "destino": "KB-006"
+  },
+  {
+   "origen": "categoria:api",
+   "relacion": "documenta",
+   "destino": "KB-013"
+  },
+  {
+   "origen": "categoria:api",
+   "relacion": "documenta",
+   "destino": "KB-014"
+  },
+  {
+   "origen": "categoria:api",
+   "relacion": "documenta",
+   "destino": "KB-015"
+  },
+  {
+   "origen": "categoria:api",
+   "relacion": "documenta",
+   "destino": "KB-016"
+  },
+  {
+   "origen": "categoria:api",
+   "relacion": "documenta",
+   "destino": "KB-017"
+  },
+  {
+   "origen": "categoria:api",
+   "relacion": "documenta",
+   "destino": "KB-018"
+  },
+  {
+   "origen": "categoria:api",
+   "relacion": "documenta",
+   "destino": "KB-041"
+  },
+  {
+   "origen": "categoria:api",
+   "relacion": "documenta",
+   "destino": "KB-042"
+  },
+  {
+   "origen": "categoria:exportacion",
+   "relacion": "documenta",
+   "destino": "KB-019"
+  },
+  {
+   "origen": "categoria:exportacion",
+   "relacion": "documenta",
+   "destino": "KB-020"
+  },
+  {
+   "origen": "categoria:exportacion",
+   "relacion": "documenta",
+   "destino": "KB-021"
+  },
+  {
+   "origen": "categoria:exportacion",
+   "relacion": "documenta",
+   "destino": "KB-022"
+  },
+  {
+   "origen": "categoria:exportacion",
+   "relacion": "documenta",
+   "destino": "KB-023"
+  },
+  {
+   "origen": "categoria:exportacion",
+   "relacion": "documenta",
+   "destino": "KB-024"
+  },
+  {
+   "origen": "categoria:exportacion",
+   "relacion": "documenta",
+   "destino": "KB-043"
+  },
+  {
+   "origen": "categoria:exportacion",
+   "relacion": "documenta",
+   "destino": "KB-044"
+  },
+  {
+   "origen": "categoria:facturacion",
+   "relacion": "documenta",
+   "destino": "KB-007"
+  },
+  {
+   "origen": "categoria:facturacion",
+   "relacion": "documenta",
+   "destino": "KB-008"
+  },
+  {
+   "origen": "categoria:facturacion",
+   "relacion": "documenta",
+   "destino": "KB-009"
+  },
+  {
+   "origen": "categoria:facturacion",
+   "relacion": "documenta",
+   "destino": "KB-010"
+  },
+  {
+   "origen": "categoria:facturacion",
+   "relacion": "documenta",
+   "destino": "KB-011"
+  },
+  {
+   "origen": "categoria:facturacion",
+   "relacion": "documenta",
+   "destino": "KB-012"
+  },
+  {
+   "origen": "categoria:notificaciones",
+   "relacion": "documenta",
+   "destino": "KB-025"
+  },
+  {
+   "origen": "categoria:notificaciones",
+   "relacion": "documenta",
+   "destino": "KB-026"
+  },
+  {
+   "origen": "categoria:notificaciones",
+   "relacion": "documenta",
+   "destino": "KB-027"
+  },
+  {
+   "origen": "categoria:notificaciones",
+   "relacion": "documenta",
+   "destino": "KB-028"
+  },
+  {
+   "origen": "categoria:notificaciones",
+   "relacion": "documenta",
+   "destino": "KB-029"
+  },
+  {
+   "origen": "categoria:notificaciones",
+   "relacion": "documenta",
+   "destino": "KB-030"
+  },
+  {
+   "origen": "categoria:seguridad",
+   "relacion": "documenta",
+   "destino": "KB-031"
+  },
+  {
+   "origen": "categoria:seguridad",
+   "relacion": "documenta",
+   "destino": "KB-032"
+  },
+  {
+   "origen": "categoria:seguridad",
+   "relacion": "documenta",
+   "destino": "KB-033"
+  },
+  {
+   "origen": "categoria:seguridad",
+   "relacion": "documenta",
+   "destino": "KB-034"
+  },
+  {
+   "origen": "categoria:seguridad",
+   "relacion": "documenta",
+   "destino": "KB-035"
+  },
+  {
+   "origen": "categoria:seguridad",
+   "relacion": "documenta",
+   "destino": "KB-036"
+  },
+  {
+   "origen": "causa:reloj_desfasado",
+   "relacion": "procedimiento",
+   "destino": "KB-041"
+  },
+  {
+   "origen": "sintoma:401",
+   "relacion": "pertenece_a",
+   "destino": "categoria:api"
+  },
+  {
+   "origen": "sintoma:401",
+   "relacion": "posible_causa",
+   "destino": "causa:reloj_desfasado"
+  }
+ ]
+}

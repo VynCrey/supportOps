@@ -9,15 +9,17 @@ y usa otra base de datos; no forma parte de este repositorio.
 - `schema.sql` define las siete tablas del proyecto en PostgreSQL.
 - `bootstrap.py` crea la base `supportops_final` y carga una muestra ficticia:
   3 clientes, 6 tickets y 18 eventos.
-- `documentos` y `relaciones` quedan vacias hasta incorporar el trabajo de Marco.
+- `documentos` y `relaciones` se llenan con `cargar_kb.py` a partir de `kb.json`
+  (44 documentos de Marco). Ver [docs/kb_y_recuperacion.md](docs/kb_y_recuperacion.md).
 - `run.py` inicia la API local. Ya permite comprobar la conexion, listar tickets,
   consultar uno con sus eventos, crear tickets y ver cantidades por estado.
 - `db.py` guarda ejecuciones de analisis y una revision humana por ejecucion.
   La API permite consultar ambas cuando existan.
 - `analysis.py` coordina cuatro roles, comprueba las salidas, aplica el gate y
   guarda la ejecucion. `llm.py` llama al modelo local de Ollama.
-- `knowledge_adapter.py` conecta con `retrieval.py` de Marco cuando exista.
-  Mientras falte, la evidencia es vacia y el resultado lo indica claramente.
+- `knowledge_adapter.py` conecta con `retrieval.py` de Marco (lexical, grafo e
+  hibrido sobre PostgreSQL). Si el archivo faltara, la evidencia es vacia y el
+  resultado lo indica claramente.
 - La API incluye analisis de tickets, consulta de ejecuciones y revision humana.
 - `streamlit_app.py` ofrece un panel local para listar y crear tickets, ejecutar
   analisis y guardar revisiones.
@@ -63,6 +65,18 @@ reales.
 El generador usa semilla 42, 18 familias y 54 frases base. La
 [ficha de datos](docs/ficha_datos.md) explica origen, fechas y limites. `eda.py`
 lee la base y calcula los hallazgos; no inventa resultados antes de ejecutarse.
+
+## Cargar la base de conocimiento
+
+Despues de `bootstrap.py`, una vez (se puede repetir sin duplicar):
+
+```powershell
+.\.venv\Scripts\python.exe .\cargar_kb.py
+```
+
+Pide la contrasena y carga los documentos y relaciones de `kb.json`. `run.py`
+deja esa misma contrasena en `PGPASSWORD`, solo dentro de su proceso, para que
+`retrieval.py` pueda leer la base durante el analisis.
 
 ## Probar la API
 
@@ -139,8 +153,7 @@ caracteres. El nuevo ticket inicia en estado `abierto`.
 Las pruebas unitarias no requieren una base de datos ni Ollama. Para probar el
 flujo real se necesita PostgreSQL, la muestra cargada y Ollama con el modelo.
 
-La integracion documental y la recuperacion siguen pendientes de Marco. El
-volumen final de datos requiere ejecutar el generador en cada instalacion; no
+El volumen final de datos requiere ejecutar el generador en cada instalacion; no
 se incluye un volcado de la base en Git. Los roles necesitan mas pruebas con el
 modelo real y documentos antes de evaluar su calidad.
 
