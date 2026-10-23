@@ -1,7 +1,7 @@
 from typing import Literal
 from urllib.error import URLError
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from psycopg import OperationalError
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
@@ -43,10 +43,21 @@ def crear_app(clave_db: str) -> FastAPI:
             raise HTTPException(status_code=503, detail="PostgreSQL no disponible")
         return {"estado": "ok", "base": "conectada"}
 
+    @app.get("/clientes")
+    def listar_clientes():
+        return {"clientes": datos.listar_clientes()}
+
     @app.get("/tickets")
-    def listar_tickets(plan: Plan | None = None):
-        tickets = datos.listar_tickets(plan)
-        return {"cantidad": len(tickets), "tickets": tickets}
+    def listar_tickets(plan: Plan | None = None,
+                       limit: int = Query(default=50, ge=1, le=200),
+                       offset: int = Query(default=0, ge=0)):
+        tickets = datos.listar_tickets(plan, limit, offset)
+        return {
+            "cantidad": datos.contar_tickets(plan),
+            "tickets": tickets,
+            "limit": limit,
+            "offset": offset,
+        }
 
     @app.get("/tickets/{ticket_id}")
     def obtener_ticket(ticket_id: int):
@@ -56,6 +67,14 @@ def crear_app(clave_db: str) -> FastAPI:
         if ticket is None:
             raise HTTPException(status_code=404, detail="Ticket no encontrado")
         return ticket
+
+    @app.get("/tickets/{ticket_id}/ejecuciones")
+    def listar_ejecuciones_ticket(ticket_id: int):
+        if ticket_id <= 0:
+            raise HTTPException(status_code=422, detail="El ID debe ser mayor que cero")
+        if datos.obtener_ticket(ticket_id) is None:
+            raise HTTPException(status_code=404, detail="Ticket no encontrado")
+        return {"ejecuciones": datos.listar_ejecuciones_ticket(ticket_id)}
 
     @app.post("/tickets/{ticket_id}/analizar")
     def analizar_ticket(ticket_id: int):

@@ -26,7 +26,25 @@ class SupportOpsDB:
                 cursor.execute("SELECT 1")
                 cursor.fetchone()
 
-    def listar_tickets(self, plan: str | None = None):
+    def listar_clientes(self):
+        with self.conectar() as conexion:
+            with conexion.cursor() as cursor:
+                cursor.execute("SELECT id, nombre, plan FROM clientes ORDER BY id")
+                return cursor.fetchall()
+
+    def contar_tickets(self, plan: str | None = None):
+        consulta = "SELECT COUNT(*) AS cantidad FROM tickets AS t"
+        parametros = ()
+        if plan is not None:
+            consulta += " JOIN clientes AS c ON c.id = t.cliente_id WHERE c.plan = %s"
+            parametros = (plan,)
+        with self.conectar() as conexion:
+            with conexion.cursor() as cursor:
+                cursor.execute(consulta, parametros)
+                return cursor.fetchone()["cantidad"]
+
+    def listar_tickets(self, plan: str | None = None, limit: int = 50,
+                       offset: int = 0):
         consulta = """
             SELECT t.id, t.cliente_id, c.nombre AS cliente, c.plan,
                    t.texto, t.prioridad, t.estado, t.creado
@@ -37,7 +55,8 @@ class SupportOpsDB:
         if plan is not None:
             consulta += " WHERE c.plan = %s"
             parametros = (plan,)
-        consulta += " ORDER BY t.id"
+        consulta += " ORDER BY t.id LIMIT %s OFFSET %s"
+        parametros += (limit, offset)
 
         with self.conectar() as conexion:
             with conexion.cursor() as cursor:
@@ -73,6 +92,23 @@ class SupportOpsDB:
                 )
                 ticket["eventos"] = cursor.fetchall()
                 return ticket
+
+    def listar_ejecuciones_ticket(self, ticket_id: int):
+        with self.conectar() as conexion:
+            with conexion.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT e.id, e.ticket_id, e.creado,
+                           e.resultado->'supervision'->>'decision' AS supervision,
+                           r.decision AS revision
+                    FROM ejecuciones AS e
+                    LEFT JOIN revisiones AS r ON r.ejecucion_id = e.id
+                    WHERE e.ticket_id = %s
+                    ORDER BY e.id DESC
+                    """,
+                    (ticket_id,),
+                )
+                return cursor.fetchall()
 
     def crear_ticket(self, cliente_id: int, texto: str):
         with self.conectar() as conexion:

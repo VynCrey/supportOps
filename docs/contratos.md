@@ -60,9 +60,14 @@ con esta base nueva.
 ## API disponible
 
 - `GET /health`: comprueba la conexion a PostgreSQL.
+- `GET /clientes`: lista clientes con `id`, `nombre` y `plan`.
 - `GET /tickets?plan=Pro`: lista tickets; el filtro por plan es opcional.
+  `limit` (1 a 200, predeterminado 50) y `offset` paginan; `cantidad` indica
+  el total filtrado, no solo el tamano de la pagina.
 - `GET /tickets/{id}`: devuelve el ticket y sus eventos, sin los campos
   `categoria_real` ni `familia`.
+- `GET /tickets/{id}/ejecuciones`: lista los analisis guardados de un ticket,
+  con su `id`, decision automatica y posible revision humana.
 - `POST /tickets`: recibe `{"cliente_id": 2, "texto": "..."}` y crea un ticket.
 - `GET /kpis`: cantidades totales, abiertas y resueltas.
 - `GET /ejecuciones/{id}`: recupera un analisis guardado y su revision, si existe.

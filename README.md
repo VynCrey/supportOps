@@ -19,8 +19,11 @@ y usa otra base de datos; no forma parte de este repositorio.
 - `knowledge_adapter.py` conecta con `retrieval.py` de Marco cuando exista.
   Mientras falte, la evidencia es vacia y el resultado lo indica claramente.
 - La API incluye analisis de tickets, consulta de ejecuciones y revision humana.
-- Esta muestra permite probar contratos e integracion. Aun no cumple el volumen
-  final de 500 clientes, 20.000 tickets y 60.000 eventos de la guia.
+- `streamlit_app.py` ofrece un panel local para listar y crear tickets, ejecutar
+  analisis y guardar revisiones.
+- `generar_datos.py` puede ampliar la muestra hasta 500 clientes, 20.000
+  tickets y 60.000 eventos ficticios. No agrega documentos: esa parte corresponde
+  a la base de conocimiento de Marco.
 
 ## Preparar en Windows
 
@@ -42,6 +45,19 @@ Para usar el entorno de la practica mientras se prepara uno independiente:
 ..\backend-python-postgresql\.venv\Scripts\python.exe .\bootstrap.py
 ```
 
+Para ver los conteos y luego generar el volumen final:
+
+```powershell
+.\.venv\Scripts\python.exe .\generar_datos.py
+.\.venv\Scripts\python.exe .\generar_datos.py --aplicar
+```
+
+La segunda orden agrega los datos dentro de una transaccion y confirma los
+conteos antes de guardar. Una nueva ejecucion, si ya alcanzo el objetivo, no
+duplica filas. Si agregaste tickets manualmente sin sus tres eventos, se detiene
+para que revises esa diferencia. Hacelo sobre la base ficticia, no sobre datos
+reales.
+
 ## Probar la API
 
 Detene cualquier servidor anterior con Ctrl+C. Desde esta carpeta ejecuta:
@@ -57,6 +73,11 @@ Ingresa la contrasena cuando se solicite. Luego abre:
 - <http://127.0.0.1:8000/tickets/3> para ver un ticket y sus eventos.
 - <http://127.0.0.1:8000/kpis> para ver los conteos.
 - <http://127.0.0.1:8000/docs> para probar los endpoints desde el navegador.
+
+`GET /tickets` devuelve hasta 50 filas por pagina. Usa `limit` (1 a 200) y
+`offset` para avanzar; `cantidad` es el total que coincide con el filtro.
+`GET /clientes` lista los clientes para crear tickets. Tambien podes consultar
+`GET /tickets/{id}/ejecuciones` para encontrar los IDs de analisis anteriores.
 
 Cuando el analisis produzca ejecuciones, tambien estaran disponibles
 `GET /ejecuciones/{id}` y `POST /ejecuciones/{id}/revision`. Una revision puede
@@ -85,6 +106,20 @@ ollama list
 Despues reinicia `run.py` y usa `POST /tickets/3/analizar` desde `/docs`.
 La primera llamada puede demorar; el modelo responde cuatro veces, una por rol.
 
+## Abrir el panel
+
+Mantene la API corriendo y, en otra terminal dentro de esta carpeta, ejecuta:
+
+```powershell
+.\.venv\Scripts\python.exe -m streamlit run .\streamlit_app.py
+```
+
+Abri <http://localhost:8501>. El panel se conecta por defecto a la API local
+en `http://127.0.0.1:8000`. Desde ahi podes ver cantidades, consultar o crear
+tickets, analizar uno y registrar una revision. El panel selecciona los IDs de
+ejecucion por vos. Si cambias el puerto de la API, configura la variable de
+entorno `SUPPORTOPS_API_URL` antes de iniciar el panel.
+
 Los planes de esta base se escriben `Basic`, `Pro` y `Enterprise`. Crear un
 ticket por POST requiere un `cliente_id` existente y un texto de 10 a 4000
 caracteres. El nuevo ticket inicia en estado `abierto`.
@@ -98,9 +133,10 @@ caracteres. El nuevo ticket inicia en estado `abierto`.
 Las pruebas unitarias no requieren una base de datos ni Ollama. Para probar el
 flujo real se necesita PostgreSQL, la muestra cargada y Ollama con el modelo.
 
-Esta API es una etapa del proyecto final. Aun faltan la base documental,
-la recuperacion de Marco, la interfaz y el volumen final de datos. Los roles
-necesitan mas pruebas con el modelo real antes de evaluar su calidad.
+La integracion documental y la recuperacion siguen pendientes de Marco. El
+volumen final de datos requiere ejecutar el generador en cada instalacion; no
+se incluye un volcado de la base en Git. Los roles necesitan mas pruebas con el
+modelo real y documentos antes de evaluar su calidad.
 
 ## Contrato de integracion
 

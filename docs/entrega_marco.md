@@ -3,12 +3,14 @@
 ## Punto de partida
 
 Cristian preparo las siete tablas en `schema.sql`, una muestra ficticia con
-`bootstrap.py` y la API en `main.py`. `POST /tickets/{id}/analizar` ya llama
+`bootstrap.py`, un generador opcional en `generar_datos.py`, la API en `main.py`
+y el panel en `streamlit_app.py`. `POST /tickets/{id}/analizar` ya llama
 cuatro roles con Ollama, guarda el resultado y permite revision humana. Mientras
 no haya documentos ni recuperador, la evidencia es vacia y la supervision exige
 revision. Nunca se considera una respuesta respaldada por documentos.
 
-La muestra local es pequena: 3 clientes, 6 tickets y 18 eventos. La base
+La muestra inicial es pequena: 3 clientes, 6 tickets y 18 eventos. El generador
+puede ampliarla a 500 clientes, 20.000 tickets y 60.000 eventos. La base
 `supportops_final` y la contrasena de PostgreSQL son locales; no se suben a Git.
 Cada colaborador crea su propia base ejecutando `bootstrap.py` tras instalar
 `requirements.txt`. Ver instrucciones completas en el README.
