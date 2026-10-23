@@ -119,11 +119,15 @@ def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve) -> dict:
 
     borrador = pedir(
         "borrador",
-        "Redacta una propuesta breve para un operador. Usa solo la evidencia. "
-        "Citas contiene los IDs usados. Sin evidencia, no afirmes procedimientos: "
-        "pide solo datos no secretos, como endpoint, hora, codigo de error o "
-        "entorno, y deja citas vacias. Nunca pidas el valor de un token, clave "
-        "o contrasena.",
+        "Redacta una propuesta breve para un operador usando solo la evidencia. "
+        "En texto escribe la respuesta propuesta con los pasos respaldados; no "
+        "copies el ticket. En preguntas incluye solo preguntas directas para el "
+        "cliente, nunca pasos ni instrucciones del procedimiento. En citas usa "
+        "solo los IDs exactos de los documentos utilizados, sin copiar su texto. "
+        "Sin evidencia, no afirmes procedimientos: explica que faltan datos y "
+        "pregunta solo por datos no secretos, como endpoint, hora, codigo de "
+        "error o entorno; deja citas vacias. Nunca pidas el valor de un token, "
+        "clave o contrasena.",
         {"ticket": publico, "evidencia": evidencia},
         Borrador,
     )

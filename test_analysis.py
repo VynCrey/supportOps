@@ -97,6 +97,30 @@ class AnalisisTest(unittest.TestCase):
             "preguntas": ["¿A qué hora ocurrió el error 401?"],
         }))
 
+    def test_mencionar_token_para_diagnostico_no_bloquea(self):
+        borrador = {
+            "texto": "Revisar vencimiento del token y entorno configurado.",
+            "citas": ["KB-013"],
+            "preguntas": ["Revisar vencimiento del token y entorno configurado."],
+        }
+        faltantes = ["Estado del token, sin compartir su valor"]
+        self.assertFalse(pide_credenciales(borrador, faltantes))
+        resultado = aplicar_gate(
+            borrador, [{"id": "KB-013"}], "api",
+            {"decision": "revisar", "motivos": []}, faltantes,
+        )
+        self.assertEqual(resultado["decision"], "revisar")
+
+    def test_pedido_explicito_de_token_sigue_bloqueado(self):
+        self.assertTrue(pide_credenciales({
+            "texto": "Consultar el error 401.",
+            "preguntas": ["Enviame tu token."],
+        }))
+        self.assertTrue(pide_credenciales(
+            {"texto": "Consultar el error 401.", "preguntas": []},
+            ["Solicitar la clave de acceso"],
+        ))
+
     def test_ejecucion_antigua_insegura_no_puede_aprobarse(self):
         resultado = {
             "supervision": {"decision": "revisar"},

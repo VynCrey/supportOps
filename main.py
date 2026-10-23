@@ -85,7 +85,9 @@ def crear_app(clave_db: str) -> FastAPI:
         except TicketNoEncontrado as error:
             raise HTTPException(status_code=404, detail=str(error)) from error
         except (URLError, TimeoutError, ConnectionError, OSError) as error:
-            raise HTTPException(status_code=503, detail="Modelo local no disponible") from error
+            raise HTTPException(
+                status_code=503, detail="Modelo o base de conocimiento no disponible"
+            ) from error
         except (ValueError, ValidationError, TypeError, KeyError) as error:
             raise HTTPException(status_code=502, detail="Salida del analisis invalida") from error
 
