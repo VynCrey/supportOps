@@ -307,6 +307,90 @@
    "titulo": "Exportacion por descarga directa (vigente) - Guia operador",
    "version": 2,
    "texto": "Indicar la descarga directa desde el portal demo. Solicitar id de tarea y formato. Reemplaza al envio por correo."
+  },
+  {
+   "id": "KB-045",
+   "categoria": "acceso",
+   "titulo": "Bloqueo por intentos fallidos - Guia operador",
+   "version": 1,
+   "texto": "Confirmar en el registro de accesos del portal demo si la cuenta se bloqueo por intentos fallidos. Explicar que el bloqueo es temporal segun la politica configurada, sin prometer un horario. No desbloquear a mano ni pedir contrasenas."
+  },
+  {
+   "id": "KB-046",
+   "categoria": "acceso",
+   "titulo": "Codigo de segundo factor no llega - Guia operador",
+   "version": 1,
+   "texto": "Verificar que el telefono o la aplicacion de autenticacion registrados sigan activos. Solicitar hora del intento y medio elegido, SMS o aplicacion. Nunca pedir el codigo recibido. Escalar a seguridad si el cliente no reconoce el telefono registrado."
+  },
+  {
+   "id": "KB-047",
+   "categoria": "facturacion",
+   "titulo": "Pago rechazado - Guia operador",
+   "version": 1,
+   "texto": "Consultar en Facturacion el estado del ultimo intento de pago y el motivo informado por el medio de pago. Solicitar fecha del intento y medio usado, sin numeros de tarjeta ni codigos de seguridad. No prometer la reactivacion del servicio."
+  },
+  {
+   "id": "KB-048",
+   "categoria": "facturacion",
+   "titulo": "Cambio de plan y ajuste proporcional - Guia operador",
+   "version": 1,
+   "texto": "Explicar que un cambio de plan genera un ajuste proporcional en la siguiente factura segun la fecha del cambio. Solicitar plan anterior, plan nuevo y fecha del cambio. No calcular montos ni prometer reintegros: los confirma el area de facturacion."
+  },
+  {
+   "id": "KB-049",
+   "categoria": "api",
+   "titulo": "Error 500 en la API - Guia operador",
+   "version": 1,
+   "texto": "Consultar la pagina de estado del portal demo por si hay un incidente activo. Solicitar endpoint, hora y el identificador de la solicitud que devuelve la respuesta. Escalar a desarrollo si el error se repite sin incidente informado. No prometer fecha de solucion."
+  },
+  {
+   "id": "KB-050",
+   "categoria": "api",
+   "titulo": "Webhook sin entregas - Guia operador",
+   "version": 1,
+   "texto": "Revisar en el registro de entregas del portal demo si los envios al webhook fallaron y cuantos reintentos hubo. Verificar que la URL configurada responda con codigo 200. Solicitar URL y hora del evento esperado, sin credenciales del servidor del cliente."
+  },
+  {
+   "id": "KB-051",
+   "categoria": "exportacion",
+   "titulo": "Caracteres raros en el CSV - Guia operador",
+   "version": 1,
+   "texto": "Indicar que el archivo se genera en UTF-8 y que algunas planillas lo abren con otra codificacion. Explicar como importarlo eligiendo UTF-8. Solicitar el programa usado para abrirlo y un ejemplo del texto afectado, sin datos privados."
+  },
+  {
+   "id": "KB-052",
+   "categoria": "exportacion",
+   "titulo": "Exportacion incompleta por limite de filas - Guia operador",
+   "version": 1,
+   "texto": "Verificar si el rango de fechas supera el limite de filas por exportacion del plan demo. Sugerir dividir el rango en partes mas chicas. Solicitar rango elegido y cantidad aproximada de filas. No prometer aumentar el limite."
+  },
+  {
+   "id": "KB-053",
+   "categoria": "notificaciones",
+   "titulo": "SMS de aviso no recibido - Guia operador",
+   "version": 1,
+   "texto": "Verificar que el numero registrado este completo y con codigo de pais. Revisar en el portal demo si el envio figura como entregado. Solicitar hora aproximada y tipo de aviso esperado. No pedir codigos recibidos por SMS."
+  },
+  {
+   "id": "KB-054",
+   "categoria": "notificaciones",
+   "titulo": "Avisos filtrados por correo corporativo - Guia operador",
+   "version": 1,
+   "texto": "Si el cliente usa un correo de su empresa, verificar si el servidor corporativo filtra los avisos. Indicar el dominio remitente del portal demo para que su area de sistemas lo autorice. Solicitar dominio del correo del cliente y hora del aviso esperado."
+  },
+  {
+   "id": "KB-055",
+   "categoria": "seguridad",
+   "titulo": "Cambio de email no solicitado - Guia operador",
+   "version": 1,
+   "texto": "Escalar de inmediato al equipo de seguridad. Indicar al cliente que no confirme ningun enlace de cambio que no haya pedido. Solicitar hora del aviso recibido. No pedir contrasenas ni codigos y no afirmar que la cuenta esta protegida."
+  },
+  {
+   "id": "KB-056",
+   "categoria": "seguridad",
+   "titulo": "Clave de API expuesta - Guia operador",
+   "version": 1,
+   "texto": "Indicar al cliente que revoque desde su panel la clave expuesta y genere una nueva. Escalar a seguridad. Solicitar donde quedo expuesta y desde cuando, sin que el cliente comparta la clave."
   }
  ],
  "relaciones": [
@@ -344,6 +428,16 @@
    "origen": "categoria:acceso",
    "relacion": "documenta",
    "destino": "KB-006"
+  },
+  {
+   "origen": "categoria:acceso",
+   "relacion": "documenta",
+   "destino": "KB-045"
+  },
+  {
+   "origen": "categoria:acceso",
+   "relacion": "documenta",
+   "destino": "KB-046"
   },
   {
    "origen": "categoria:api",
@@ -386,6 +480,16 @@
    "destino": "KB-042"
   },
   {
+   "origen": "categoria:api",
+   "relacion": "documenta",
+   "destino": "KB-049"
+  },
+  {
+   "origen": "categoria:api",
+   "relacion": "documenta",
+   "destino": "KB-050"
+  },
+  {
    "origen": "categoria:exportacion",
    "relacion": "documenta",
    "destino": "KB-019"
@@ -426,6 +530,16 @@
    "destino": "KB-044"
   },
   {
+   "origen": "categoria:exportacion",
+   "relacion": "documenta",
+   "destino": "KB-051"
+  },
+  {
+   "origen": "categoria:exportacion",
+   "relacion": "documenta",
+   "destino": "KB-052"
+  },
+  {
    "origen": "categoria:facturacion",
    "relacion": "documenta",
    "destino": "KB-007"
@@ -454,6 +568,16 @@
    "origen": "categoria:facturacion",
    "relacion": "documenta",
    "destino": "KB-012"
+  },
+  {
+   "origen": "categoria:facturacion",
+   "relacion": "documenta",
+   "destino": "KB-047"
+  },
+  {
+   "origen": "categoria:facturacion",
+   "relacion": "documenta",
+   "destino": "KB-048"
   },
   {
    "origen": "categoria:notificaciones",
@@ -486,6 +610,16 @@
    "destino": "KB-030"
   },
   {
+   "origen": "categoria:notificaciones",
+   "relacion": "documenta",
+   "destino": "KB-053"
+  },
+  {
+   "origen": "categoria:notificaciones",
+   "relacion": "documenta",
+   "destino": "KB-054"
+  },
+  {
    "origen": "categoria:seguridad",
    "relacion": "documenta",
    "destino": "KB-031"
@@ -516,9 +650,79 @@
    "destino": "KB-036"
   },
   {
+   "origen": "categoria:seguridad",
+   "relacion": "documenta",
+   "destino": "KB-055"
+  },
+  {
+   "origen": "categoria:seguridad",
+   "relacion": "documenta",
+   "destino": "KB-056"
+  },
+  {
+   "origen": "causa:bloqueo_temporal",
+   "relacion": "procedimiento",
+   "destino": "KB-045"
+  },
+  {
+   "origen": "causa:cambio_de_plan",
+   "relacion": "procedimiento",
+   "destino": "KB-048"
+  },
+  {
+   "origen": "causa:codificacion_distinta",
+   "relacion": "procedimiento",
+   "destino": "KB-051"
+  },
+  {
+   "origen": "causa:credencial_filtrada",
+   "relacion": "procedimiento",
+   "destino": "KB-056"
+  },
+  {
+   "origen": "causa:dispositivo_desactualizado",
+   "relacion": "procedimiento",
+   "destino": "KB-046"
+  },
+  {
+   "origen": "causa:filtro_del_servidor",
+   "relacion": "procedimiento",
+   "destino": "KB-054"
+  },
+  {
+   "origen": "causa:incidente_del_servicio",
+   "relacion": "procedimiento",
+   "destino": "KB-049"
+  },
+  {
+   "origen": "causa:limite_de_filas",
+   "relacion": "procedimiento",
+   "destino": "KB-052"
+  },
+  {
+   "origen": "causa:medio_de_pago_vencido",
+   "relacion": "procedimiento",
+   "destino": "KB-047"
+  },
+  {
+   "origen": "causa:numero_mal_registrado",
+   "relacion": "procedimiento",
+   "destino": "KB-053"
+  },
+  {
    "origen": "causa:reloj_desfasado",
    "relacion": "procedimiento",
    "destino": "KB-041"
+  },
+  {
+   "origen": "causa:toma_de_cuenta",
+   "relacion": "procedimiento",
+   "destino": "KB-055"
+  },
+  {
+   "origen": "causa:url_sin_respuesta",
+   "relacion": "procedimiento",
+   "destino": "KB-050"
   },
   {
    "origen": "sintoma:401",
@@ -529,6 +733,126 @@
    "origen": "sintoma:401",
    "relacion": "posible_causa",
    "destino": "causa:reloj_desfasado"
+  },
+  {
+   "origen": "sintoma:500",
+   "relacion": "pertenece_a",
+   "destino": "categoria:api"
+  },
+  {
+   "origen": "sintoma:500",
+   "relacion": "posible_causa",
+   "destino": "causa:incidente_del_servicio"
+  },
+  {
+   "origen": "sintoma:cambio_de_email",
+   "relacion": "pertenece_a",
+   "destino": "categoria:seguridad"
+  },
+  {
+   "origen": "sintoma:cambio_de_email",
+   "relacion": "posible_causa",
+   "destino": "causa:toma_de_cuenta"
+  },
+  {
+   "origen": "sintoma:caracteres_raros",
+   "relacion": "pertenece_a",
+   "destino": "categoria:exportacion"
+  },
+  {
+   "origen": "sintoma:caracteres_raros",
+   "relacion": "posible_causa",
+   "destino": "causa:codificacion_distinta"
+  },
+  {
+   "origen": "sintoma:clave_expuesta",
+   "relacion": "pertenece_a",
+   "destino": "categoria:seguridad"
+  },
+  {
+   "origen": "sintoma:clave_expuesta",
+   "relacion": "posible_causa",
+   "destino": "causa:credencial_filtrada"
+  },
+  {
+   "origen": "sintoma:cobro_distinto",
+   "relacion": "pertenece_a",
+   "destino": "categoria:facturacion"
+  },
+  {
+   "origen": "sintoma:cobro_distinto",
+   "relacion": "posible_causa",
+   "destino": "causa:cambio_de_plan"
+  },
+  {
+   "origen": "sintoma:correo_corporativo",
+   "relacion": "pertenece_a",
+   "destino": "categoria:notificaciones"
+  },
+  {
+   "origen": "sintoma:correo_corporativo",
+   "relacion": "posible_causa",
+   "destino": "causa:filtro_del_servidor"
+  },
+  {
+   "origen": "sintoma:exportacion_incompleta",
+   "relacion": "pertenece_a",
+   "destino": "categoria:exportacion"
+  },
+  {
+   "origen": "sintoma:exportacion_incompleta",
+   "relacion": "posible_causa",
+   "destino": "causa:limite_de_filas"
+  },
+  {
+   "origen": "sintoma:intentos_fallidos",
+   "relacion": "pertenece_a",
+   "destino": "categoria:acceso"
+  },
+  {
+   "origen": "sintoma:intentos_fallidos",
+   "relacion": "posible_causa",
+   "destino": "causa:bloqueo_temporal"
+  },
+  {
+   "origen": "sintoma:pago_rechazado",
+   "relacion": "pertenece_a",
+   "destino": "categoria:facturacion"
+  },
+  {
+   "origen": "sintoma:pago_rechazado",
+   "relacion": "posible_causa",
+   "destino": "causa:medio_de_pago_vencido"
+  },
+  {
+   "origen": "sintoma:segundo_factor",
+   "relacion": "pertenece_a",
+   "destino": "categoria:acceso"
+  },
+  {
+   "origen": "sintoma:segundo_factor",
+   "relacion": "posible_causa",
+   "destino": "causa:dispositivo_desactualizado"
+  },
+  {
+   "origen": "sintoma:sms",
+   "relacion": "pertenece_a",
+   "destino": "categoria:notificaciones"
+  },
+  {
+   "origen": "sintoma:sms",
+   "relacion": "posible_causa",
+   "destino": "causa:numero_mal_registrado"
+  },
+  {
+   "origen": "sintoma:webhook",
+   "relacion": "pertenece_a",
+   "destino": "categoria:api"
+  },
+  {
+   "origen": "sintoma:webhook",
+   "relacion": "posible_causa",
+   "destino": "causa:url_sin_respuesta"
   }
  ]
 }

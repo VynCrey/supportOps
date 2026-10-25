@@ -7,13 +7,14 @@ laboratorio de Marco (SQLite)  ──exportar_kb.py──▶  kb.json  ──car
      se edita y se mide                        se versiona en Git       documentos, relaciones       lexical / grafo / hibrido
 ```
 
-La KB se edita y se mide en el laboratorio de Marco. `kb.json` es lo que se entrega: así el sistema integrado usa la misma KB sobre la que se calcularon las métricas. Hoy tiene 44 documentos y 44 relaciones.
+La KB se edita y se mide en el laboratorio de Marco. `kb.json` es lo que se entrega: así el sistema integrado usa la misma KB sobre la que se calcularon las métricas. Hoy tiene 56 documentos y 92 relaciones; el detalle y la procedencia de cada relación están en [kb.md](kb.md).
 
 - KB-001 a KB-036: tres procedimientos por categoría, cada uno en versión guía y FAQ.
 - KB-037 a KB-040: política general.
 - KB-041: error 401 por reloj desfasado. Es el procedimiento causal y el grafo llega a él por `sintoma:401 → causa:reloj_desfasado`.
 - KB-042: rotación de tokens. Es un distractor: habla de tokens pero no resuelve un 401.
 - KB-043 y KB-044: exportación por correo (retirado) y descarga directa (vigente). `KB-044 reemplaza_a KB-043`.
+- KB-045 a KB-056: dos procedimientos nuevos por categoría, cada uno con su síntoma y su causa.
 
 ## Cómo se carga
 
@@ -22,7 +23,7 @@ La KB se edita y se mide en el laboratorio de Marco. `kb.json` es lo que se entr
 .\.venv\Scripts\python.exe cargar_kb.py      # pide la contrasena; se puede repetir
 ```
 
-La primera carga informa `{'nuevos': 44, ...}` y las siguientes `{'nuevos': 0, ..., 'sin cambios': 44, ...}`. Antes de tocar la base, `cargar_kb.py` valida el archivo: IDs únicos, campos completos y relaciones que apuntan a documentos que existen.
+En una base vacía la primera carga informa `{'nuevos': 56, ...}`; sobre una base con la versión anterior, `{'nuevos': 12, 'sin cambios': 44, 'relaciones nuevas': 48}`. Las siguientes, `'nuevos': 0`. Antes de tocar la base, `cargar_kb.py` valida el archivo: IDs únicos, campos completos y relaciones que apuntan a documentos que existen.
 
 ## Contrato de `retrieve`
 
@@ -55,7 +56,7 @@ Si la API se arranca de otra forma (por ejemplo, `uvicorn` directo), hay que def
 
 ## Grafo por síntoma
 
-`mi_grafo.py` recorre hasta dos saltos desde un síntoma, muestra la ruta y no devuelve versiones reemplazadas. Una ruta causal pesa menos (gana) que una ruta por categoría.
+`mi_grafo.py` recorre hasta dos saltos desde un síntoma, muestra la ruta y no devuelve versiones reemplazadas. Una ruta causal pesa menos (gana) que una ruta por categoría. Arranca solo si la consulta trae todas las palabras clave del síntoma (ver [kb.md](kb.md)).
 
 ```powershell
 .\.venv\Scripts\python.exe mi_grafo.py "Codigo 401 al autenticar"
