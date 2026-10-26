@@ -1,8 +1,11 @@
 import unittest
 from urllib.error import URLError
 
+from pydantic import ValidationError
+
 from analysis import TicketNoEncontrado, analyze, aplicar_gate
 from db import SupportOpsDB
+from main import NuevaRevision
 from safety import pide_credenciales
 
 
@@ -39,7 +42,11 @@ class AnalisisTest(unittest.TestCase):
             if "herramienta" in claves:
                 return {"herramienta": "lexical", "consulta": "error 401", "motivo": "Codigo exacto"}
             if "citas" in claves:
-                return {"texto": "Revisar el error sin compartir el token.", "citas": ["KB-013"], "preguntas": []}
+                return {
+                    "texto": "Revisar el error sin compartir el token.",
+                    "citas": ["KB-013"],
+                    "preguntas": [],
+                }
             return {"decision": "listo", "motivos": []}
 
         def recuperar(query, category, tool):
@@ -120,6 +127,31 @@ class AnalisisTest(unittest.TestCase):
             {"texto": "Consultar el error 401.", "preguntas": []},
             ["Solicitar la clave de acceso"],
         ))
+
+    def test_otras_formas_de_pedir_secretos_bloquean(self):
+        pedidos = [
+            "¿Cuál es tu token?",
+            "Decime tu token",
+            "Compartí tu token conmigo",
+            "Escribí acá tu clave",
+            "¿Me das el código de verificación?",
+        ]
+
+        for pedido in pedidos:
+            with self.subTest(pedido=pedido):
+                self.assertTrue(pide_credenciales({
+                    "texto": "Estamos revisando el problema.",
+                    "preguntas": [pedido],
+                }))
+
+        self.assertFalse(pide_credenciales({
+            "texto": "Revisar vencimiento del token.",
+            "preguntas": [],
+        }))
+
+    def test_motivo_de_ejemplo_se_rechaza(self):
+        with self.assertRaises(ValidationError):
+            NuevaRevision(decision="rechazar", motivo=" string ")
 
     def test_ejecucion_antigua_insegura_no_puede_aprobarse(self):
         resultado = {
