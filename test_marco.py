@@ -162,6 +162,23 @@ class KBTests(unittest.TestCase):
             validar(roto)
 
 
+class EvaluacionTests(unittest.TestCase):
+    def test_bandit_no_entrena_con_las_consultas_de_prueba(self):
+        """Si una consulta de prueba aparece en el entrenamiento, el bandit y sus
+        metricas dejan de valer."""
+        from bandit import casos_entrenamiento, casos_prueba
+        entrenamiento = {texto for texto, _, _ in casos_entrenamiento(KB)}
+        prueba = {texto for texto, _, _ in casos_prueba()}
+        self.assertTrue(prueba)
+        self.assertFalse(entrenamiento & prueba)
+
+    def test_consultas_citan_documentos_que_existen(self):
+        from evaluar import cargar
+        ids = {d["id"] for d in DOCS}
+        for r in cargar():
+            self.assertTrue(r["fuentes"] <= ids, r["id"])
+
+
 class ContratoTests(unittest.TestCase):
     """Lo que analysis.py espera de retrieve, probado con la KB real y sin base."""
 

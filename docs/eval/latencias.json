@@ -1,0 +1,8 @@
+{
+  "ms": {
+    "lexical": 1.5287450002506375,
+    "grafo": 0.010316333112617334,
+    "hibrido": 1.5559136665736635
+  },
+  "metodo": "minimo de 7 rondas de 20 repeticiones, orden rotado, con calentamiento"
+}
