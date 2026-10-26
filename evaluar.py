@@ -67,7 +67,9 @@ def resumir(detalle, tipos):
 def main(tools=HERRAMIENTAS):
     filas = cargar()
     kb = leer_archivo()
-    huella = hashlib.sha256(KB.read_bytes()).hexdigest()[:8]
+    # Huella de la version de la KB. Se normalizan los finales de linea para que
+    # Windows y Linux den la misma huella para el mismo contenido.
+    huella = hashlib.sha256(KB.read_bytes().replace(b"\r\n", b"\n")).hexdigest()[:8]
     con_respuesta = sum(not r["abstencion"] for r in filas)
     print(f"{date.today():%d/%m/%Y} · KB: {len(kb['documentos'])} documentos, "
           f"{len(kb['relaciones'])} relaciones (kb.json {huella}) · k={K}")
