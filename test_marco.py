@@ -179,6 +179,114 @@ class EvaluacionTests(unittest.TestCase):
             self.assertTrue(r["fuentes"] <= ids, r["id"])
 
 
+class AnalisisH5Tests(unittest.TestCase):
+    """Arreglos A-D, despues de T01 y T02 (ejecuciones 13 y 14, sesion 2)."""
+
+    class Datos:
+        def __init__(self):
+            self.guardados = []
+
+        def obtener_ticket(self, ticket_id):
+            return {"id": 987654, "texto": "No me deja entrar a la cuenta",
+                    "plan": "Pro", "prioridad": "media",
+                    "categoria_real": "acceso", "familia": "acceso-0"}
+
+        def guardar_ejecucion(self, ticket_id, resultado):
+            self.guardados.append(resultado)
+            return len(self.guardados)
+
+    def correr(self, categoria, herramienta, evidencia):
+        entradas, esquemas, busquedas = [], {}, []
+
+        def llm(rol, payload, esquema):
+            entradas.append(payload)
+            claves = set(esquema["properties"])
+            if "categoria" in claves:
+                return {"categoria": categoria, "consulta": "no puedo entrar",
+                        "faltantes": []}
+            if "herramienta" in claves:
+                return {"herramienta": herramienta, "consulta": "no puedo entrar",
+                        "motivo": "prueba"}
+            if "citas" in claves:
+                esquemas["borrador"] = esquema
+                return {"texto": "Pedir la hora del error.", "citas": [], "preguntas": []}
+            return {"motivos": ["prueba"], "decision": "revisar"}
+
+        def recuperar(query, category, tool):
+            busquedas.append(tool)
+            return evidencia
+
+        r = analyze(1, self.Datos(), llm=llm, recuperar=recuperar)
+        return r, entradas, esquemas, busquedas
+
+    def test_a_el_modelo_no_recibe_el_id_del_ticket(self):
+        _, entradas, _, _ = self.correr("acceso", "lexical", [])
+        self.assertTrue(entradas)
+        self.assertTrue(all("987654" not in str(e) for e in entradas))
+
+    def test_b_las_citas_solo_pueden_ser_ids_de_la_evidencia(self):
+        evidencia = [{"id": "KB-045", "titulo": "t", "texto": "x"},
+                     {"id": "KB-002", "titulo": "t", "texto": "x"}]
+        _, _, esquemas, _ = self.correr("acceso", "lexical", evidencia)
+        citas = esquemas["borrador"]["properties"]["citas"]
+        self.assertEqual(citas["items"]["enum"], ["KB-045", "KB-002"])
+
+    def test_b_sin_evidencia_el_esquema_no_admite_citas(self):
+        _, _, esquemas, _ = self.correr("acceso", "lexical", [])
+        self.assertEqual(esquemas["borrador"]["properties"]["citas"]["maxItems"], 0)
+
+    def test_c_el_triage_describe_todas_las_categorias(self):
+        from analysis import CATEGORIAS_TRIAGE
+        for categoria in ("acceso", "facturacion", "api", "exportacion",
+                          "notificaciones", "seguridad", "general"):
+            self.assertIn(categoria + ":", CATEGORIAS_TRIAGE)
+
+    def test_d_grafo_con_categoria_general_se_cambia_a_lexical(self):
+        r, _, _, busquedas = self.correr("general", "grafo", [])
+        self.assertEqual(busquedas, ["lexical"])
+        paso = next(p for p in r["traza"] if "documentos" in p)
+        self.assertEqual(paso["herramienta"], "lexical")
+        self.assertEqual(paso["elegida_por_el_modelo"], "grafo")
+
+    def test_d_grafo_con_otra_categoria_se_respeta(self):
+        r, _, _, busquedas = self.correr("acceso", "grafo", [])
+        self.assertEqual(busquedas, ["grafo"])
+        self.assertNotIn("elegida_por_el_modelo",
+                         next(p for p in r["traza"] if "documentos" in p))
+
+    def test_prompts_sin_palabras_pegadas(self):
+        """Los prompts se arman concatenando lineas: cada una tiene que terminar en
+        espacio. Se revisa el texto exacto que recibe el modelo."""
+        roles = []
+
+        def llm(rol, payload, esquema):
+            roles.append(rol)
+            claves = set(esquema["properties"])
+            if "categoria" in claves:
+                return {"categoria": "acceso", "consulta": "x", "faltantes": []}
+            if "herramienta" in claves:
+                return {"herramienta": "lexical", "consulta": "x", "motivo": "x"}
+            if "citas" in claves:
+                return {"texto": "x", "citas": [], "preguntas": []}
+            return {"motivos": [], "decision": "revisar"}
+
+        analyze(1, self.Datos(), llm=llm, recuperar=lambda q, c, t: [])
+        texto = " ".join(roles)
+        for frase in ("datos no secretos que ayuden", "deja citas vacias",
+                      "no copies el ticket", "no elijas grafo"):
+            self.assertIn(frase, texto)
+        for pegada in ("secretosque", "dejacitas", "vaciasNunca", "ticketEn"):
+            self.assertNotIn(pegada, texto)
+
+    def test_d_con_la_kb_real_t02_trae_su_documento(self):
+        """Con la regla D, la consulta que escribio el modelo en la ejecucion 14
+        (triage general, herramienta grafo) llega a KB-046. Documenta el efecto,
+        no lo ajusta: la consulta es la que el modelo genero."""
+        docs = buscar("código de inicio de sesión no llega", "general", "lexical",
+                      DOCS, RELS)
+        self.assertEqual(docs[0]["id"], "KB-046")
+
+
 class ContratoTests(unittest.TestCase):
     """Lo que analysis.py espera de retrieve, probado con la KB real y sin base."""
 

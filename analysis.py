@@ -45,6 +45,36 @@ class Supervision(Salida):
     decision: Literal["listo", "revisar", "bloquear"]
 
 
+def esquema_borrador(evidencia: list[dict]) -> dict:
+    """Esquema del borrador con las citas limitadas a los IDs de la evidencia.
+    Sin evidencia no admite ninguna cita. Asi el modelo no puede generar una cita
+    inventada (antes citaba el ID del ticket); el gate igual lo sigue verificando."""
+    esquema = Borrador.model_json_schema()
+    citas = esquema["properties"]["citas"]
+    ids = [documento["id"] for documento in evidencia]
+    if ids:
+        citas["items"] = {"type": "string", "enum": ids}
+    else:
+        citas["maxItems"] = 0
+    return esquema
+
+
+# C: una linea por categoria, tomada de los titulos de los procedimientos de la KB.
+CATEGORIAS_TRIAGE = (
+    "acceso: entrar a la cuenta, recuperar acceso, cuenta bloqueada, intentos "
+    "fallidos, enlace vencido, segundo factor; "
+    "facturacion: facturas, comprobantes, cobros, pagos, cambio de plan; "
+    "api: integraciones, endpoints, tokens, permisos, limite de peticiones, "
+    "errores HTTP como 401, 403, 429 o 500, webhooks; "
+    "exportacion: exportar o descargar datos, archivos CSV, columnas; "
+    "notificaciones: avisos, correos o SMS que no llegan o llegan duplicados, "
+    "preferencias de notificaciones; "
+    "seguridad: accesos o sesiones desconocidas, phishing, cambios no solicitados "
+    "en la cuenta, claves expuestas; "
+    "general: solo si no encaja en ninguna de las anteriores."
+)
+
+
 def aplicar_gate(borrador: dict, evidencia: list[dict], categoria: str,
                  supervision: dict, faltantes: list[str] | None = None) -> dict:
     if pide_credenciales(borrador, faltantes):
@@ -68,13 +98,16 @@ def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve) -> dict:
     if ticket is None:
         raise TicketNoEncontrado("Ticket no encontrado")
 
-    # La etiqueta real y la familia sintetica no llegan al modelo.
-    publico = {clave: ticket[clave] for clave in ("id", "texto", "plan", "prioridad")}
+    # La etiqueta real y la familia sintetica no llegan al modelo. Tampoco el ID:
+    # el borrador lo citaba como si fuera un documento, y el mismo texto daba otro
+    # resultado segun el numero del ticket.
+    publico = {clave: ticket[clave] for clave in ("texto", "plan", "prioridad")}
     traza = []
 
-    def pedir(nombre: str, instruccion: str, entrada: dict, modelo: type[Salida]):
+    def pedir(nombre: str, instruccion: str, entrada: dict, modelo: type[Salida],
+              esquema: dict | None = None):
         inicio = perf_counter()
-        respuesta = llm(instruccion, entrada, modelo.model_json_schema())
+        respuesta = llm(instruccion, entrada, esquema or modelo.model_json_schema())
         try:
             salida = modelo.model_validate(respuesta).model_dump()
         except ValidationError as error:
@@ -88,8 +121,7 @@ def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve) -> dict:
 
     triage = pedir(
         "triage",
-        "Clasifica el ticket. Si menciona API, endpoint o errores HTTP "
-        "401/403/429, usa api. Usa general solo si no hay una categoria clara. "
+        "Clasifica el ticket en una categoria. " + CATEGORIAS_TRIAGE + " "
         "Indica datos faltantes, pero nunca pidas tokens, claves, contrasenas "
         "ni codigos de autenticacion.",
         publico,
@@ -100,12 +132,23 @@ def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve) -> dict:
         "Elige lexical para palabras exactas, grafo para relaciones de categoria "
         "o hibrido para combinar ambos. La consulta debe ser breve. "
         "Busca sintomas y errores; no solicites valores de credenciales. "
+        "Si la categoria del triage es general, no elijas grafo: esa categoria no "
+        "tiene documentos en el grafo. "
         "En motivo explica en una frase por que elegiste esa herramienta.",
         {"ticket": publico, "triage": triage},
         PlanBusqueda,
     )
 
-    evidencia = recuperar(plan["consulta"], triage["categoria"], plan["herramienta"])
+    herramienta = plan["herramienta"]
+    paso_busqueda = {}
+    if triage["categoria"] == "general" and herramienta == "grafo":
+        # Con categoria general el grafo nunca devuelve documentos: la busqueda
+        # quedaria vacia sin importar la consulta. El gate igual manda a revision
+        # todo lo que es general.
+        herramienta = "lexical"
+        paso_busqueda = {"elegida_por_el_modelo": "grafo",
+                         "regla": "grafo con categoria general no tiene documentos"}
+    evidencia = recuperar(plan["consulta"], triage["categoria"], herramienta)
     if not isinstance(evidencia, list) or any(
         not isinstance(doc, dict) or not isinstance(doc.get("id"), str)
         for doc in evidencia
@@ -113,7 +156,8 @@ def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve) -> dict:
         raise ValueError("La busqueda devolvio documentos invalidos")
     evidencia = evidencia[:3]
     traza.append({
-        "herramienta": plan["herramienta"],
+        "herramienta": herramienta,
+        **paso_busqueda,
         "documentos": [doc["id"] for doc in evidencia],
     })
 
@@ -125,11 +169,12 @@ def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve) -> dict:
         "cliente, nunca pasos ni instrucciones del procedimiento. En citas usa "
         "solo los IDs exactos de los documentos utilizados, sin copiar su texto. "
         "Sin evidencia, no afirmes procedimientos: explica que faltan datos y "
-        "pregunta solo por datos no secretos, como endpoint, hora, codigo de "
-        "error o entorno; deja citas vacias. Nunca pidas el valor de un token, "
-        "clave o contrasena.",
+        "pregunta solo por datos no secretos que ayuden con ese problema, como "
+        "la hora o el mensaje de error; deja citas vacias. Nunca pidas el valor "
+        "de un token, clave o contrasena.",
         {"ticket": publico, "evidencia": evidencia},
         Borrador,
+        esquema_borrador(evidencia),
     )
     supervision = pedir(
         "supervisor",

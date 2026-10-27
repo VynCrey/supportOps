@@ -1,0 +1,78 @@
+{
+  "nota": "Resultado inicial (version 1) en la maquina de Cristian, antes de los arreglos A-D. Resumen de GET /ejecuciones/13 y /14; los tiempos se omiten.",
+  "ejecuciones": [
+    {
+      "id": 13,
+      "ticket_id": 20003,
+      "caso": "T01",
+      "creado": "2026-10-26T22:49:16-03:00",
+      "triage": {
+        "categoria": "general",
+        "consulta": "Puse mal la clave varias veces y ahora no me deja entrar por un rato",
+        "faltantes": []
+      },
+      "plan_busqueda": {
+        "herramienta": "grafo",
+        "consulta": "puse mal la clave y no me deja entrar",
+        "motivo": "especifica una relación de categoría clara y precisa"
+      },
+      "evidencia": [],
+      "borrador": {
+        "texto": "¿Cuál es el endpoint de acceso que estás utilizando para intentar entrar?",
+        "citas": [
+          "20003"
+        ],
+        "preguntas": [
+          "¿Cuál es el código de error que estás recibiendo?",
+          "¿Cuánto tiempo aproximado lleva el sistema en bloquear la cuenta después de varias fallas de autenticación?"
+        ]
+      },
+      "supervisor_modelo": {
+        "decision": "revisar"
+      },
+      "supervision": {
+        "decision": "bloquear",
+        "motivos": [
+          "Cita inexistente en evidencia"
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "ticket_id": 20004,
+      "caso": "T02",
+      "creado": "2026-10-26T22:54:34-03:00",
+      "triage": {
+        "categoria": "general",
+        "consulta": "No me llega el código del segundo paso cuando inicio sesión",
+        "faltantes": []
+      },
+      "plan_busqueda": {
+        "herramienta": "grafo",
+        "consulta": "código de inicio de sesión no llega",
+        "motivo": "Es necesario identificar si el problema es de configuración del sistema o de un error en la aplicación, lo que requiere una clasificación de categoría."
+      },
+      "evidencia": [],
+      "borrador": {
+        "texto": "¿Cuál es el endpoint de inicio de sesión que estás utilizando?",
+        "citas": [
+          "20004"
+        ],
+        "preguntas": [
+          "¿Cuál es la hora exacta de este problema?",
+          "¿En qué entorno estás experimentando este problema?",
+          "¿Has recibido algún código de error específico al intentar iniciar sesión?"
+        ]
+      },
+      "supervisor_modelo": {
+        "decision": "revisar"
+      },
+      "supervision": {
+        "decision": "bloquear",
+        "motivos": [
+          "Cita inexistente en evidencia"
+        ]
+      }
+    }
+  ]
+}
