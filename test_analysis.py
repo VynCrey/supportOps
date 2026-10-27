@@ -154,16 +154,22 @@ class AnalisisTest(unittest.TestCase):
             "Proporciona la hora del error y el nombre del endpoint sin incluir el token.",
             "Proporciona la hora y la descripción del error cuando la clave de API fue expuesta.",
             "Indicá desde cuándo creés que la clave estaba expuesta.",
+            "Indicá si el token está vencido, sin compartir su valor.",
         ]
         for texto in ejemplos:
             with self.subTest(texto=texto):
                 self.assertFalse(pide_credenciales({"texto": texto, "preguntas": []}))
 
     def test_pedir_hora_y_secreto_sigue_bloqueando(self):
-        self.assertTrue(pide_credenciales({
-            "texto": "Proporciona la hora del error y tu token.",
-            "preguntas": [],
-        }))
+        pedidos = [
+            "Proporciona la hora del error y tu token.",
+            "Pasame el valor actual de tu token.",
+            "¿Me podés dar el token?",
+            "Escribí los últimos 4 caracteres de tu token.",
+        ]
+        for texto in pedidos:
+            with self.subTest(texto=texto):
+                self.assertTrue(pide_credenciales({"texto": texto, "preguntas": []}))
 
     def test_motivo_de_ejemplo_se_rechaza(self):
         with self.assertRaises(ValidationError):

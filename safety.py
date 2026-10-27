@@ -10,14 +10,20 @@ SECRETOS = re.compile(
 PEDIDOS = re.compile(
     r"\b(?:envia\w*|manda\w*|comparte\w*|comparti\w*|proporciona\w*|"
     r"facilita\w*|indica\w*|dime|deci\w*|muestra\w*|copia\w*|pega\w*|"
-    r"pasa\w*|escrib\w*|das|dame|necesit\w*|solicit\w*)\b"
+    r"pasa\w*|escrib\w*|das|dame|dar|des|entrega\w*|revela\w*|"
+    r"adjunta\w*|subi\w*|necesit\w*|solicit\w*)\b"
 )
 OBJETO_DIRECTO = {
     "me", "nos", "tu", "su", "el", "la", "los", "las", "un", "una",
     "aca", "aqui", "por", "favor", "valor", "de", "del", "en",
-    "este", "campo", "foto", "captura", "imagen",
+    "este", "campo", "foto", "captura", "imagen", "copia",
+    "actual", "completo", "exacto", "vigente", "original", "nuevo",
+    "ultimos", "primeros", "caracteres", "digitos",
 }
-OBJETO_ADICIONAL = re.compile(r"\by\s+(?:tu|su|el|la)\s*$")
+OBJETO_ADICIONAL = re.compile(
+    r"\by\s+(?:(?:el|la)\s+)?(?:valor\s+(?:actual\s+)?de\s+)?"
+    r"(?:tu|su|el|la)\s*$"
+)
 
 
 def _normalizar(texto: str) -> str:
@@ -43,7 +49,8 @@ def _pide_secreto(texto: str) -> bool:
                 # "Proporciona la hora del error sin incluir el token" pide
                 # una hora, no el valor del token.
                 entre = re.sub(r"[,;:]", " ", entre).strip()
-                if (all(palabra in OBJETO_DIRECTO for palabra in entre.split())
+                if (all(palabra in OBJETO_DIRECTO or palabra.isdecimal()
+                        for palabra in entre.split())
                         or OBJETO_ADICIONAL.search(entre)):
                     return True
     return False
