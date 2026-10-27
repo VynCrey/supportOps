@@ -122,6 +122,21 @@ class RetrievalTests(unittest.TestCase):
         self.assertIsNone(salida["nodo"])
         self.assertEqual(salida["documentos"], [])
 
+    def test_sintoma_nuevo_llega_por_su_causa(self):
+        salida = ruta("Mi pago fue rechazado", DOCS, RELS)
+        self.assertEqual(salida["nodo"], "sintoma:pago_rechazado")
+        self.assertEqual(salida["documentos"][0]["id"], "KB-047")
+        self.assertIn("posible_causa", salida["documentos"][0]["camino"])
+
+    def test_palabra_corta_no_hace_arrancar_al_grafo(self):
+        """Con la coincidencia por subcadena, 'la' arrancaba en sintoma:clave_expuesta."""
+        self.assertIsNone(ruta("La exportacion no termina nunca", DOCS, RELS)["nodo"])
+
+    def test_limite_otra_conjugacion_no_arranca(self):
+        """Limite documentado: 'rechazaron' no coincide con 'rechazado'.
+        El grafo no entiende sinonimos ni conjugaciones; lo cubre el lexico o nada."""
+        self.assertIsNone(ruta("Me rechazaron el pago", DOCS, RELS)["nodo"])
+
     def test_version_retirada_no_se_devuelve(self):
         extra = RELS + [{"origen": "sintoma:export", "relacion": "pertenece_a",
                          "destino": "categoria:exportacion"}]
@@ -137,6 +152,7 @@ class KBTests(unittest.TestCase):
     def test_kb_tiene_los_documentos_de_marco(self):
         ids = {d["id"] for d in DOCS}
         self.assertTrue({"KB-041", "KB-042", "KB-043", "KB-044"} <= ids)
+        self.assertTrue({f"KB-{n:03}" for n in range(45, 57)} <= ids)
 
     def test_relacion_rota_se_rechaza(self):
         roto = {"documentos": DOCS,
@@ -144,6 +160,23 @@ class KBTests(unittest.TestCase):
                                 "destino": "KB-999"}]}
         with self.assertRaises(ValueError):
             validar(roto)
+
+
+class EvaluacionTests(unittest.TestCase):
+    def test_bandit_no_entrena_con_las_consultas_de_prueba(self):
+        """Si una consulta de prueba aparece en el entrenamiento, el bandit y sus
+        metricas dejan de valer."""
+        from bandit import casos_entrenamiento, casos_prueba
+        entrenamiento = {texto for texto, _, _ in casos_entrenamiento(KB)}
+        prueba = {texto for texto, _, _ in casos_prueba()}
+        self.assertTrue(prueba)
+        self.assertFalse(entrenamiento & prueba)
+
+    def test_consultas_citan_documentos_que_existen(self):
+        from evaluar import cargar
+        ids = {d["id"] for d in DOCS}
+        for r in cargar():
+            self.assertTrue(r["fuentes"] <= ids, r["id"])
 
 
 class ContratoTests(unittest.TestCase):

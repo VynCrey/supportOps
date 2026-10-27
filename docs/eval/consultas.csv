@@ -1,0 +1,21 @@
+id,texto,categoria_esperada,fuentes_aceptables,abstencion,notas
+E01,Me sale error 401 cada vez que le pego a la API desde el servidor,api,KB-013|KB-016,no,401 generico; KB-041 es una causa especifica y no vale si no menciona la hora
+E02,Me bloquearon la cuenta despues de equivocarme varias veces,acceso,KB-045,no,"compite con KB-002|KB-005, cuenta bloqueada generica"
+E03,No encuentro donde bajar la factura de septiembre,facturacion,KB-007|KB-010,no,
+E04,Me cobraron dos veces lo mismo este mes,facturacion,KB-008|KB-011,no,
+E05,Pase al plan Enterprise y la factura vino con un monto raro,facturacion,KB-048,no,compite con cobro duplicado
+E06,La API me devuelve 500 desde esta manana,api,KB-049,no,
+E07,El archivo que exporto muestra simbolos extranos en las tildes,exportacion,KB-051,no,
+E08,Antes me mandaban la exportacion por mail y ahora no me llega,exportacion,KB-044,no,solo vale la version vigente; KB-043 esta retirado
+E09,Me llegan dos mails iguales por cada aviso,notificaciones,KB-026|KB-029,no,
+E10,Me avisaron que cambiaron el email de mi cuenta y yo no fui,seguridad,KB-055,no,compite con acceso desconocido
+E11,Perdi mi contrasena para ingresar,acceso,KB-001|KB-004,no,caso del manual: el lexico devuelve vacio
+E12,El link para volver a entrar ya caduco,acceso,KB-003|KB-006,no,"link=enlace, caduco=vencio"
+E13,La API me frena por mandar demasiadas consultas seguidas,api,KB-015|KB-018,no,es el 429 sin decir 429 ni limite
+E14,No me aceptaron el debito automatico,facturacion,KB-047,no,pago rechazado sin decir pago ni rechazado
+E15,Hace dias que no recibo ninguna notificacion en mi casilla,notificaciones,KB-025|KB-028,no,casilla=correo
+E16,Necesito la factura en dolares en vez de pesos,general,KB-037|KB-038|KB-039|KB-040,si,factura en otra moneda
+E17,Se puede integrar con SAP,general,KB-037|KB-038|KB-039|KB-040,si,integracion con un ERP
+E18,Quiero un descuento por pagar el ano completo,general,KB-037|KB-038|KB-039|KB-040,si,descuentos
+E19,Tienen app para el celular,general,KB-037|KB-038|KB-039|KB-040,si,fuera del alcance
+E20,Como exporto los datos directo a Google Sheets,general,KB-037|KB-038|KB-039|KB-040,si,cerca de exportacion pero no cubierto
