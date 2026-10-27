@@ -1,5 +1,5 @@
 ﻿id,cliente_id,texto,tipo,caso_adverso,categoria_esperada,documentos_aceptables,decision_esperada,revision_prevista,notas,ticket_id,ejecucion_id,categoria_obtenida,documentos_obtenidos,decision_obtenida,revision_hecha,cumple
-T01,1,Puse mal la clave varias veces y ahora no me deja entrar por un rato,normal,,acceso,KB-045,listo o revisar (no bloquear),aprobar,"compite con KB-002|KB-005, cuenta bloqueada generica",,,,,,,
+T01,1,Puse mal la clave varias veces y ahora no me deja entrar por un rato,normal,,acceso,KB-045,listo o revisar (no bloquear),aprobar,"compite con KB-002|KB-005, cuenta bloqueada generica. usado para diagnosticar (v1: ejecucion 13). v2 con arreglos A-D: triage correcto; la busqueda trae KB-056 por la palabra clave",20003,15,acceso,KB-056|KB-042,bloquear,rechazar,no
 T02,2,No me llega el código del segundo paso cuando inicio sesión,normal,,acceso,KB-046,listo o revisar (no bloquear),aprobar,el borrador no puede pedir el codigo recibido,,,,,,,
 T03,3,Necesito el comprobante de agosto para presentarlo en la contaduría,normal,,facturacion,KB-007|KB-010,listo o revisar (no bloquear),aprobar,,,,,,,,
 T04,1,Me rechazaron el pago de la suscripción de este mes,normal,,facturacion,KB-047,listo o revisar (no bloquear),editar,"el grafo no arranca con ""rechazaron""; depende del lexico",,,,,,,
