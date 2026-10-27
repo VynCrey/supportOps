@@ -12,6 +12,12 @@ PEDIDOS = re.compile(
     r"facilita\w*|indica\w*|dime|deci\w*|muestra\w*|copia\w*|pega\w*|"
     r"pasa\w*|escrib\w*|das|dame|necesit\w*|solicit\w*)\b"
 )
+OBJETO_DIRECTO = {
+    "me", "nos", "tu", "su", "el", "la", "los", "las", "un", "una",
+    "aca", "aqui", "por", "favor", "valor", "de", "del", "en",
+    "este", "campo", "foto", "captura", "imagen",
+}
+OBJETO_ADICIONAL = re.compile(r"\by\s+(?:tu|su|el|la)\s*$")
 
 
 def _normalizar(texto: str) -> str:
@@ -29,8 +35,17 @@ def _pide_secreto(texto: str) -> bool:
             antes = frase[max(0, pedido.start() - 12):pedido.start()]
             if re.search(r"\b(?:no|nunca|jamas|sin)\s+$", antes):
                 continue
-            if SECRETOS.search(frase[pedido.end():pedido.end() + 100]):
-                return True
+            for secreto in SECRETOS.finditer(frase, pedido.end()):
+                entre = frase[pedido.end():secreto.start()]
+                if len(entre) > 100:
+                    break
+                # Solo se bloquea si el secreto es el objeto del pedido.
+                # "Proporciona la hora del error sin incluir el token" pide
+                # una hora, no el valor del token.
+                entre = re.sub(r"[,;:]", " ", entre).strip()
+                if (all(palabra in OBJETO_DIRECTO for palabra in entre.split())
+                        or OBJETO_ADICIONAL.search(entre)):
+                    return True
     return False
 
 

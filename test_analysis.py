@@ -149,6 +149,22 @@ class AnalisisTest(unittest.TestCase):
             "preguntas": [],
         }))
 
+    def test_pedir_datos_de_diagnostico_sin_el_secreto_no_bloquea(self):
+        ejemplos = [
+            "Proporciona la hora del error y el nombre del endpoint sin incluir el token.",
+            "Proporciona la hora y la descripción del error cuando la clave de API fue expuesta.",
+            "Indicá desde cuándo creés que la clave estaba expuesta.",
+        ]
+        for texto in ejemplos:
+            with self.subTest(texto=texto):
+                self.assertFalse(pide_credenciales({"texto": texto, "preguntas": []}))
+
+    def test_pedir_hora_y_secreto_sigue_bloqueando(self):
+        self.assertTrue(pide_credenciales({
+            "texto": "Proporciona la hora del error y tu token.",
+            "preguntas": [],
+        }))
+
     def test_motivo_de_ejemplo_se_rechaza(self):
         with self.assertRaises(ValidationError):
             NuevaRevision(decision="rechazar", motivo=" string ")

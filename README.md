@@ -153,6 +153,16 @@ caracteres. El nuevo ticket inicia en estado `abierto`.
 Las pruebas unitarias no requieren una base de datos ni Ollama. Para probar el
 flujo real se necesita PostgreSQL, la muestra cargada y Ollama con el modelo.
 
+En la máquina de Cristian, el intérprete está en
+`..\backend-python-postgresql\.venv\Scripts\python.exe`; reemplazá
+`.\.venv\Scripts\python.exe` por esa ruta en los comandos anteriores.
+
+La evaluación H5 de 20 tickets está en [docs/eval/h5_v2.md](docs/eval/h5_v2.md).
+Para recuperar los resultados de ejecuciones ya guardadas, o continuar solo los
+casos pendientes sin crear tickets duplicados, ejecutá `evaluar_h5_local.py`
+con la API local abierta. El script registra resultados automáticos; las
+revisiones humanas se guardan desde el panel.
+
 El volumen final de datos requiere ejecutar el generador en cada instalacion; no
 se incluye un volcado de la base en Git. Los roles necesitan mas pruebas con el
 modelo real y documentos antes de evaluar su calidad.
