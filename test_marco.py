@@ -254,6 +254,30 @@ class AnalisisH5Tests(unittest.TestCase):
         self.assertNotIn("elegida_por_el_modelo",
                          next(p for p in r["traza"] if "documentos" in p))
 
+    def test_prompts_sin_palabras_pegadas(self):
+        """Los prompts se arman concatenando lineas: cada una tiene que terminar en
+        espacio. Se revisa el texto exacto que recibe el modelo."""
+        roles = []
+
+        def llm(rol, payload, esquema):
+            roles.append(rol)
+            claves = set(esquema["properties"])
+            if "categoria" in claves:
+                return {"categoria": "acceso", "consulta": "x", "faltantes": []}
+            if "herramienta" in claves:
+                return {"herramienta": "lexical", "consulta": "x", "motivo": "x"}
+            if "citas" in claves:
+                return {"texto": "x", "citas": [], "preguntas": []}
+            return {"motivos": [], "decision": "revisar"}
+
+        analyze(1, self.Datos(), llm=llm, recuperar=lambda q, c, t: [])
+        texto = " ".join(roles)
+        for frase in ("datos no secretos que ayuden", "deja citas vacias",
+                      "no copies el ticket", "no elijas grafo"):
+            self.assertIn(frase, texto)
+        for pegada in ("secretosque", "dejacitas", "vaciasNunca", "ticketEn"):
+            self.assertNotIn(pegada, texto)
+
     def test_d_con_la_kb_real_t02_trae_su_documento(self):
         """Con la regla D, la consulta que escribio el modelo en la ejecucion 14
         (triage general, herramienta grafo) llega a KB-046. Documenta el efecto,

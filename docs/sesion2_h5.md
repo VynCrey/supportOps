@@ -10,12 +10,23 @@
 
 ## 0. Antes de empezar (10 minutos)
 
+Cada uno tiene Python en otra carpeta. Al abrir **cada** terminal, primero se define `$py` con el de la máquina donde se hace la sesión, y después todos los comandos usan `& $py`:
+
+```powershell
+# en la máquina de Marco
+$py = '.\.venv\Scripts\python.exe'
+# en la máquina de Cristian
+$py = '..\backend-python-postgresql\.venv\Scripts\python.exe'
+```
+
+Para comprobarlo: `& $py --version` tiene que mostrar la versión de Python.
+
 | # | Quién | Qué | Cómo se comprueba |
 |---|---|---|---|
-| 0.1 | Cristian | Mergear el PR #3 en `main` | En GitHub, el PR figura como *Merged* |
-| 0.2 | Los dos | `git checkout main` y `git pull` | `git log -1` muestra el merge del PR #3 |
-| 0.3 | Quien maneja | `.\.venv\Scripts\python.exe -m unittest discover -s . -p "test_*.py" -v` | `Ran 50 tests` · `OK` |
-| 0.4 | Quien maneja | `.\.venv\Scripts\python.exe cargar_kb.py` | `'sin cambios': 56` (o `'nuevos': 12` la primera vez) |
+| 0.1 | Cristian | Mergear el PR #5 (arreglos A-D) en `main` | En GitHub, el PR figura como *Merged* |
+| 0.2 | Los dos | `git checkout main` y `git pull` | `git log -1` muestra el merge del PR #5 |
+| 0.3 | Quien maneja | `& $py -m unittest discover -s . -p "test_*.py" -v` | `Ran 51 tests` · `OK` |
+| 0.4 | Quien maneja | `& $py cargar_kb.py` | `'sin cambios': 56` (o `'nuevos': 12` la primera vez) |
 | 0.5 | Quien maneja | Ollama abierto (ícono en la bandeja) | — |
 | 0.6 | Quien maneja | Abrir `docs/eval/tickets_h5.csv` en Excel | Se ven las 20 filas con acentos bien |
 | 0.7 | Quien maneja | Crear la carpeta `docs\capturas` | — |
@@ -29,13 +40,13 @@
 
 **Terminal 1, la API:**
 ```powershell
-.\.venv\Scripts\python.exe run.py
+& $py run.py
 ```
 Pide la contraseña de PostgreSQL. Comprobación: http://127.0.0.1:8000/health tiene que responder `"estado": "ok"`.
 
 **Terminal 2, el panel:**
 ```powershell
-.\.venv\Scripts\python.exe -m streamlit run .\streamlit_app.py
+& $py -m streamlit run .\streamlit_app.py
 ```
 Si pide un email, apretá Enter. Abrí http://localhost:8501.
 
@@ -96,7 +107,7 @@ Se prueban desde http://127.0.0.1:8000/docs. Anotá el código y el mensaje en l
 1. En la terminal 1, cortá `run.py` con Ctrl+C y corré:
    ```powershell
    $env:SUPPORTOPS_OLLAMA = 'http://127.0.0.1:9'
-   .\.venv\Scripts\python.exe run.py
+   & $py run.py
    ```
 2. En `/docs`, `GET /tickets/{ticket_id}/ejecuciones` con el ticket 3: anotá cuántas ejecuciones tiene.
 3. `POST /tickets/{ticket_id}/analizar` con 3.

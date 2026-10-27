@@ -170,8 +170,8 @@ def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve) -> dict:
         "solo los IDs exactos de los documentos utilizados, sin copiar su texto. "
         "Sin evidencia, no afirmes procedimientos: explica que faltan datos y "
         "pregunta solo por datos no secretos que ayuden con ese problema, como "
-        "la hora o el mensaje de error; deja citas vacias. Nunca pidas el valor de un token, "
-        "clave o contrasena.",
+        "la hora o el mensaje de error; deja citas vacias. Nunca pidas el valor "
+        "de un token, clave o contrasena.",
         {"ticket": publico, "evidencia": evidencia},
         Borrador,
         esquema_borrador(evidencia),
