@@ -28,6 +28,8 @@ class NuevaRevision(BaseModel):
         valor = valor.strip()
         if not valor:
             raise ValueError("Registrar el motivo de la decision")
+        if valor.casefold() == "string":
+            raise ValueError("Reemplazá el texto de ejemplo por un motivo real")
         return valor
 
 

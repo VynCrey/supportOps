@@ -8,9 +8,9 @@ SECRETOS = re.compile(
     r"autenticacion|seguridad)|2fa)\b"
 )
 PEDIDOS = re.compile(
-    r"\b(?:envia\w*|manda\w*|comparte\w*|proporciona\w*|"
-    r"facilita\w*|indica\w*|dime|muestra\w*|copia\w*|pega\w*|"
-    r"pasa\w*|necesit\w*|solicit\w*)\b"
+    r"\b(?:envia\w*|manda\w*|comparte\w*|comparti\w*|proporciona\w*|"
+    r"facilita\w*|indica\w*|dime|deci\w*|muestra\w*|copia\w*|pega\w*|"
+    r"pasa\w*|escrib\w*|das|dame|necesit\w*|solicit\w*)\b"
 )
 
 
@@ -22,9 +22,12 @@ def _normalizar(texto: str) -> str:
 def _pide_secreto(texto: str) -> bool:
     """Distingue pedir el secreto de mencionar un token para diagnosticarlo."""
     for frase in re.split(r"[.!?\n]", _normalizar(texto)):
+        pregunta = re.search(r"\bcual es (?:tu|su|el|la)\s+", frase)
+        if pregunta and SECRETOS.match(frase[pregunta.end():]):
+            return True
         for pedido in PEDIDOS.finditer(frase):
             antes = frase[max(0, pedido.start() - 12):pedido.start()]
-            if re.search(r"\b(?:no|nunca|jamas)\s+$", antes):
+            if re.search(r"\b(?:no|nunca|jamas|sin)\s+$", antes):
                 continue
             if SECRETOS.search(frase[pedido.end():pedido.end() + 100]):
                 return True
