@@ -1,0 +1,769 @@
+{
+  "T04": {
+    "ticket_id": 20006,
+    "ejecucion_id": 20,
+    "categoria": "facturacion",
+    "documentos": [
+      "KB-007",
+      "KB-008",
+      "KB-009"
+    ],
+    "citas": [
+      "KB-007"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-007"
+      ],
+      "texto": "Por favor, proporciona la fecha de tu suscripción de este mes y el número de tu comprobante de pago. Estos datos son necesarios para continuar con el proceso de rechazo del pago.",
+      "preguntas": [
+        "¿Cuál fue la fecha de tu suscripción de este mes?",
+        "¿Podrías proporcionar el número de tu comprobante de pago?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Falta de datos específicos para confirmar la suscripción y el comprobante de pago."
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": false,
+      "decision": true
+    }
+  },
+  "T05": {
+    "ticket_id": 20007,
+    "ejecucion_id": 21,
+    "categoria": "api",
+    "documentos": [
+      "KB-013",
+      "KB-014",
+      "KB-015"
+    ],
+    "citas": [
+      "KB-013",
+      "KB-014"
+    ],
+    "decision": "bloquear",
+    "borrador": {
+      "citas": [
+        "KB-013",
+        "KB-014"
+      ],
+      "texto": "Se está recibiendo un error 403 en el endpoint de pedidos. ¿Podrías proporcionar la hora exacta del error y el nombre del endpoint sin incluir el token?",
+      "preguntas": [
+        "¿Cuál es la hora exacta del error 403 en el endpoint de pedidos?",
+        "¿Cuál es el nombre del endpoint sin incluir el token?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Solicitud de credenciales detectada"
+      ],
+      "decision": "bloquear"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": true,
+      "decision": false
+    }
+  },
+  "T06": {
+    "ticket_id": 20008,
+    "ejecucion_id": 22,
+    "categoria": "api",
+    "documentos": [
+      "KB-013",
+      "KB-014",
+      "KB-015"
+    ],
+    "citas": [
+      "KB-013",
+      "KB-014",
+      "KB-015"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-013",
+        "KB-014",
+        "KB-015"
+      ],
+      "texto": "Por favor, proporciona la hora exacta del error y el mensaje de error recibido por el webhook.",
+      "preguntas": [
+        "¿Cuál es la hora exacta del error?",
+        "¿Qué mensaje de error recibiste por el webhook?",
+        "¿Podrías proporcionar el código del error recibido?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "KB-013",
+        "KB-014",
+        "KB-015"
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": false,
+      "decision": true
+    }
+  },
+  "T07": {
+    "ticket_id": 20009,
+    "ejecucion_id": 23,
+    "categoria": "facturacion",
+    "documentos": [
+      "KB-007",
+      "KB-008",
+      "KB-009"
+    ],
+    "citas": [
+      "KB-009"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-009"
+      ],
+      "texto": "Por favor, proporciona la fecha y el número de comprobante afectado para revisar si hay algún problema con los datos del comprobante.",
+      "preguntas": [
+        "¿Cuál es la fecha del comprobante que está causando el problema?",
+        "¿Cuál es el número de comprobante que está causando el problema?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "No hay evidencia suficiente para confirmar si el borrador está respaldado por la evidencia. Falta información sobre la fecha y el número de comprobante afectado.",
+        "Falta información sobre la fecha y el número de comprobante que está causando el problema."
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": false,
+      "documentos": false,
+      "decision": true
+    }
+  },
+  "T08": {
+    "ticket_id": 20010,
+    "ejecucion_id": 24,
+    "categoria": "exportacion",
+    "documentos": [
+      "KB-019",
+      "KB-020",
+      "KB-021"
+    ],
+    "citas": [
+      "KB-019",
+      "KB-020"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-019",
+        "KB-020"
+      ],
+      "texto": "Hace una hora que la exportación figura como pendiente. ¿Podrías verificar si hay un error específico o formato de exportación que no esté funcionando correctamente?",
+      "preguntas": [
+        "¿Podrías proporcionar el error exacto o formato de exportación que no está funcionando?",
+        "¿Podrías consultar el estado de la tarea en el portal demo y proporcionar el ID de la tarea?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Pide proporcionar el error exacto y formato de exportación que no está funcionando.",
+        "Pide consultar el estado de la tarea en el portal demo y proporcionar el ID de la tarea."
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": true,
+      "decision": true
+    }
+  },
+  "T09": {
+    "ticket_id": 20011,
+    "ejecucion_id": 25,
+    "categoria": "notificaciones",
+    "documentos": [
+      "KB-025",
+      "KB-026",
+      "KB-027"
+    ],
+    "citas": [
+      "KB-025",
+      "KB-026",
+      "KB-027"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-025",
+        "KB-026",
+        "KB-027"
+      ],
+      "texto": "Por favor, proporciona la hora aproximada y el tipo de aviso que no estás recibiendo. Esto ayudará a identificar si es un problema de hora o de tipo de aviso.",
+      "preguntas": [
+        "¿Cuál es la hora aproximada en la que no recibiste el aviso?",
+        "¿Qué tipo de aviso no recibiste?",
+        "¿Has notificado este problema a tu equipo de soporte técnico?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Pede a lus usuarios que proporcionen a que hora non recibían o aviso e o tipo de aviso.",
+        "Pede a lus usuarios que notifiquen o problema á súa equipa de soporte técnico."
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": false,
+      "decision": true
+    }
+  },
+  "T10": {
+    "ticket_id": 20012,
+    "ejecucion_id": 26,
+    "categoria": "notificaciones",
+    "documentos": [
+      "KB-025",
+      "KB-028",
+      "KB-026"
+    ],
+    "citas": [
+      "KB-025",
+      "KB-028"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-025",
+        "KB-028"
+      ],
+      "texto": "¿Podrías indicarme la hora aproximada en la que recibiste el último aviso por correo?",
+      "preguntas": [
+        "¿Cuál era el tipo de aviso que recibiste?",
+        "¿Podrías confirmar si estás suscrito a los avisos semanales?",
+        "¿Podrías decirme si recibiste algún aviso duplicado?",
+        "¿Podrías indicar si estás en la suscripción de spam?",
+        "¿Podrías decirme si estás en la suscripción de notificaciones de correo?",
+        "¿Podrías decirme si estás en la suscripción de notificaciones de notificaciones de notificaciones?",
+        "¿Podrías decirme si estás en la suscripción de notificaciones de notificaciones de notificaciones de notificaciones?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "No hay evidencia directa que respalde la solicitud de indicar la hora aproximada en la que recibió el último aviso por correo.",
+        "No hay evidencia directa que respalde las preguntas solicitadas para confirmar si está suscrito a los avisos semanales, si recibió algún aviso duplicado, si está en la suscripción de spam, si está en la suscripción de notificaciones de correo, si está en la suscripción de notificaciones de notificaciones de notificaciones, o si está en la suscripción de notificaciones de notificaciones de notificaciones de notificaciones."
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": false,
+      "decision": true
+    }
+  },
+  "T11": {
+    "ticket_id": 20013,
+    "ejecucion_id": 27,
+    "categoria": "notificaciones",
+    "documentos": [
+      "KB-025",
+      "KB-026",
+      "KB-027"
+    ],
+    "citas": [
+      "KB-025"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-025"
+      ],
+      "texto": "¿Podrías proporcionar la hora exacta y el tipo de aviso que menciona el correo no recibido?",
+      "preguntas": [
+        "¿Cuándo recibiste el correo no recibido?",
+        "¿Qué tipo de aviso solicitó confirmación en el correo?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Pede hora exacta e tipo de aviso no correo no recibido"
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": false,
+      "documentos": false,
+      "decision": true
+    }
+  },
+  "T12": {
+    "ticket_id": 20014,
+    "ejecucion_id": 28,
+    "categoria": "api",
+    "documentos": [
+      "KB-056",
+      "KB-049"
+    ],
+    "citas": [
+      "KB-056"
+    ],
+    "decision": "bloquear",
+    "borrador": {
+      "citas": [
+        "KB-056"
+      ],
+      "texto": "Por favor, proporciona la hora y la descripción del error que se produjo cuando la clave de API fue expuesta. También, indica desde cuándo crees que la clave estaba expuesta en el repositorio público.",
+      "preguntas": [
+        "¿Cuándo y cómo se produjo el error relacionado con la clave de API expuesta?",
+        "¿Desde cuándo crees que la clave estaba expuesta en el repositorio público?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Solicitud de credenciales detectada"
+      ],
+      "decision": "bloquear"
+    },
+    "comprobaciones": {
+      "categoria": false,
+      "documentos": true,
+      "decision": false
+    }
+  },
+  "T13": {
+    "ticket_id": 20015,
+    "ejecucion_id": 29,
+    "categoria": "general",
+    "documentos": [],
+    "citas": [],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [],
+      "texto": "Hola, necesito ayuda urgente para resolver un problema con mi cuenta de plan Basic. ¿Podrías decirme la hora exacta de cuando empezó a no funcionar y si has recibido algún mensaje de error específico?",
+      "preguntas": [
+        "¿Cuál es la hora exacta desde que empezó a no funcionar?",
+        "¿Has recibido algún mensaje de error específico?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Evidencia insuficiente o tema ambiguo"
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": true,
+      "decision": true
+    }
+  },
+  "T14": {
+    "ticket_id": 20016,
+    "ejecucion_id": 30,
+    "categoria": "facturacion",
+    "documentos": [
+      "KB-002",
+      "KB-005",
+      "KB-051"
+    ],
+    "citas": [
+      "KB-002",
+      "KB-005"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-002",
+        "KB-005"
+      ],
+      "texto": "Para continuar con la transferencia de tu cuenta a otra empresa del grupo, necesitamos algunos detalles adicionales. ¿Podrías confirmar la hora exacta de cuando notaste que tu cuenta estaba bloqueada? Además, ¿podrías proporcionar el mensaje de error o cualquier detalle relevante que hayas recibido en ese momento?",
+      "preguntas": [
+        "¿Cuál fue la hora exacta que notaste que tu cuenta estaba bloqueada?",
+        "¿Has recibido algún mensaje de error o detalle relevante en ese momento?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Necesitas confirmar la hora exacta de cuando notaste que tu cuenta estaba bloqueada.",
+        "Necesitas proporcionar el mensaje de error o cualquier detalle relevante que hayas recibido en ese momento."
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": false,
+      "documentos": false,
+      "decision": true
+    }
+  },
+  "T15": {
+    "ticket_id": 20017,
+    "ejecucion_id": 31,
+    "categoria": "exportacion",
+    "documentos": [
+      "KB-019",
+      "KB-020",
+      "KB-021"
+    ],
+    "citas": [
+      "KB-019",
+      "KB-020",
+      "KB-021"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-019",
+        "KB-020",
+        "KB-021"
+      ],
+      "texto": "Por favor, proporciona la hora exacta de la última exportación y el formato de archivo que deseas (CSV, Excel, etc.). También, si conoces el error específico que recibiste anteriormente, sería de gran ayuda.",
+      "preguntas": [
+        "¿Cuál fue la hora exacta de la última exportación?",
+        "¿Qué formato de archivo deseas (CSV, Excel, etc.)?",
+        "¿Recibiste algún error específico en la última exportación? Si es así, por favor, describe el error y el formato de archivo que deseabas.",
+        "¿Conoces los nombres de las columnas que deseabas incluir en la exportación?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Pede informacion adicional para poder confirmar si hay evidencia suficiente para una nueva exportación.",
+        "Pede la hora exacta de la última exportación.",
+        "Pede el formato de archivo deseado (CSV, Excel, etc.).",
+        "Pede si el usuario recibió algún error específico en la última exportación.",
+        "Pede los nombres de las columnas que deseaba incluir en la exportación."
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": false,
+      "decision": true
+    }
+  },
+  "T16": {
+    "ticket_id": 20018,
+    "ejecucion_id": 32,
+    "categoria": "facturacion",
+    "documentos": [
+      "KB-008",
+      "KB-007",
+      "KB-011"
+    ],
+    "citas": [
+      "KB-007",
+      "KB-011"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-007",
+        "KB-011"
+      ],
+      "texto": "Por favor, proporciona la fecha de la factura de octubre y las referencias de los dos cobros que mencionaste en tu anterior comunicación. Esto ayudará a continuar con el proceso de reembolso.",
+      "preguntas": [
+        "¿Cuál es la fecha de la factura de octubre que no encuentras?",
+        "¿Puedes proporcionar las referencias de los dos cobros que mencionaste anteriormente?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "No se encuentra evidencia suficiente para respaldar la afirmación de que el reembolso ya fue aprobado.",
+        "No se encuentra evidencia suficiente para respaldar la afirmación de que no se encuentra la factura de octubre."
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": true,
+      "decision": true
+    }
+  },
+  "T17": {
+    "ticket_id": 20019,
+    "ejecucion_id": 33,
+    "categoria": "api",
+    "documentos": [
+      "KB-013",
+      "KB-014",
+      "KB-016"
+    ],
+    "citas": [
+      "KB-013",
+      "KB-016"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-013",
+        "KB-016"
+      ],
+      "texto": "¿Podés proporcionar la hora exacta del error y el código de error que recibiste?",
+      "preguntas": [
+        "¿Cuál es la hora exacta del error que estás experimentando?",
+        "¿Podés proporcionar el código de error que recibiste?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Revisar vencimiento del token y entorno configurado. Nunca pedir que el cliente copie el token. Solicitar código y hora del error."
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": true,
+      "decision": true
+    }
+  },
+  "T18": {
+    "ticket_id": 20020,
+    "ejecucion_id": 34,
+    "categoria": "seguridad",
+    "documentos": [
+      "KB-033",
+      "KB-036",
+      "KB-053"
+    ],
+    "citas": [
+      "KB-033",
+      "KB-036"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-033",
+        "KB-036"
+      ],
+      "texto": "Por favor, proporciona la hora exacta del inicio de sesión desconocido y el tipo de mensaje de aviso que recibiste. Esto ayudará a identificar si el problema se relaciona con la notificación no recibida.",
+      "preguntas": [
+        "¿Cuál fue la hora exacta del inicio de sesión desconocido?",
+        "¿Qué tipo de mensaje de aviso recibiste?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Requiere especialista de seguridad"
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": true,
+      "decision": true
+    }
+  },
+  "T19": {
+    "ticket_id": 20021,
+    "ejecucion_id": 35,
+    "categoria": "general",
+    "documentos": [
+      "KB-005",
+      "KB-002",
+      "KB-055"
+    ],
+    "citas": [
+      "KB-005",
+      "KB-002",
+      "KB-055"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-005",
+        "KB-002",
+        "KB-055"
+      ],
+      "texto": "Por favor, proporciona la hora exacta cuando recibiste el aviso de cambio de correo electrónico no solicitado. Esto ayudará a determinar la próxima acción a seguir.",
+      "preguntas": [
+        "¿Cuál fue la hora exacta cuando recibiste el aviso de cambio de correo electrónico no solicitado?",
+        "¿Podrías proporcionar el mensaje que recibiste junto con el aviso de cambio de correo electrónico?",
+        "¿Has confirmado o desconfirmado cualquier enlace de cambio de correo electrónico que recibiste?",
+        "¿Has notificado al cliente que no debes confirmar ningún enlace de cambio de correo electrónico que no hayas solicitado?",
+        "¿Podrías proporcionar el número de la cuenta del cliente 2?",
+        "¿Has intentado verificar la cuenta del cliente 2?",
+        "¿Has intentado cambiar el correo electrónico del cliente 2?",
+        "¿Has intentado cambiar la contraseña del cliente 2?",
+        "¿Has intentado restablecer la contraseña del cliente 2?",
+        "¿Has intentado cambiar el número de teléfono del cliente 2?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Evidencia insuficiente o tema ambiguo"
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": false,
+      "documentos": false,
+      "decision": true
+    }
+  },
+  "T20": {
+    "ticket_id": 20022,
+    "ejecucion_id": 36,
+    "categoria": "facturacion",
+    "documentos": [
+      "KB-008",
+      "KB-011",
+      "KB-053"
+    ],
+    "citas": [
+      "KB-008",
+      "KB-011",
+      "KB-053"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-008",
+        "KB-011",
+        "KB-053"
+      ],
+      "texto": "Por favor, proporciona las referencias de los dos cobros que te han sido realizados. También necesitamos la hora aproximada y el tipo de aviso que esperabas recibir. Esto ayudará a resolver tu problema de notificaciones.",
+      "preguntas": [
+        "¿Cuáles son las referencias de los dos cobros que has recibido?",
+        "¿Cuál es la hora aproximada en la que esperabas recibir el aviso?",
+        "¿Qué tipo de aviso esperabas recibir (SMS, correo electrónico)?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Necesitas proporcionar las referencias de los dos cobros que has recibido.",
+        "Necesitas indicar la hora aproximada en la que esperabas recibir el aviso.",
+        "Necesitas especificar el tipo de aviso que esperabas recibir (SMS, correo electrónico)."
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": true,
+      "decision": true
+    }
+  },
+  "T01": {
+    "ticket_id": 20003,
+    "ejecucion_id": 15,
+    "categoria": "acceso",
+    "documentos": [
+      "KB-056",
+      "KB-042"
+    ],
+    "citas": [
+      "KB-056"
+    ],
+    "decision": "bloquear",
+    "borrador": {
+      "citas": [
+        "KB-056"
+      ],
+      "texto": "Por favor, proporciona la hora exacta de cuando comenzó a tener problemas para entrar y la clave que no puedes usar. Esto nos ayudará a tomar medidas inmediatas para solucionar tu problema.",
+      "preguntas": [
+        "¿Cuándo comenzó a tener problemas para entrar?",
+        "¿Cuál es la clave que no puedes usar?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Solicitud de credenciales detectada"
+      ],
+      "decision": "bloquear"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": false,
+      "decision": false
+    }
+  },
+  "T02": {
+    "ticket_id": 20004,
+    "ejecucion_id": 16,
+    "categoria": "seguridad",
+    "documentos": [
+      "KB-031",
+      "KB-032",
+      "KB-033"
+    ],
+    "citas": [
+      "KB-031",
+      "KB-033"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-031",
+        "KB-033"
+      ],
+      "texto": "Por favor, proporciona la hora exacta de cuando intentaste iniciar sesión y el mensaje de error que recibiste.",
+      "preguntas": [
+        "¿Cuál fue el mensaje de error que recibiste al intentar iniciar sesión?",
+        "¿Cuál fue la hora exacta de tu intento de iniciar sesión?",
+        "¿Has intentado iniciar sesión desde un dispositivo diferente?",
+        "¿Has intentado iniciar sesión con un usuario diferente?",
+        "¿Has intentado iniciar sesión desde una red diferente?",
+        "¿Has intentado iniciar sesión con un navegador diferente?",
+        "¿Has intentado iniciar sesión con un dispositivo diferente?",
+        "¿Has intentado iniciar sesión con un dispositivo diferente?",
+        "¿Has intentado iniciar sesión con un dispositivo diferente?",
+        "¿Has intentado iniciar sesión con un dispositivo diferente?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Requiere especialista de seguridad"
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": false,
+      "documentos": false,
+      "decision": true
+    }
+  },
+  "T03": {
+    "ticket_id": 20005,
+    "ejecucion_id": 19,
+    "categoria": "facturacion",
+    "documentos": [
+      "KB-007",
+      "KB-009",
+      "KB-008"
+    ],
+    "citas": [
+      "KB-007"
+    ],
+    "decision": "revisar",
+    "borrador": {
+      "citas": [
+        "KB-007"
+      ],
+      "texto": "Necesito el comprobante de agosto para presentarlo en la contaduría. ¿Podrías proporcionarme la fecha exacta del periodo y el número del comprobante?",
+      "preguntas": [
+        "¿Cuál es la fecha del periodo de agosto?",
+        "¿Podrías proporcionar el número del comprobante correspondiente al mes de agosto?"
+      ]
+    },
+    "supervision": {
+      "motivos": [
+        "Necesitas la fecha exacta del periodo de agosto y el número del comprobante correspondiente.",
+        "La evidencia actual no proporciona la fecha exacta del periodo de agosto ni el número del comprobante correspondiente."
+      ],
+      "decision": "revisar"
+    },
+    "comprobaciones": {
+      "categoria": true,
+      "documentos": true,
+      "decision": true
+    }
+  }
+}
