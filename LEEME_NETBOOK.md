@@ -48,6 +48,12 @@ La primera llamada al modelo puede tardar. Si el panel dice que la API no está 
 
 La revisión se guarda en PostgreSQL **sin enviar ningún mensaje a un cliente**. Como el modelo genera texto, sus respuestas pueden variar; la demostración no garantiza una aprobación automática.
 
+## 5. Simular varias consultas como una conversación
+
+En el panel abrí **Simulación** y elegí un cliente ficticio. Escribí una pregunta como si fueras ese cliente. Tocá **Pedir propuesta a la IA** y, como operador, revisá la respuesta, las citas y los documentos. Podés **aprobar**, **editar** la respuesta o **rechazar** la propuesta, siempre con un motivo. Al guardar, escribí otra pregunta y repetí el ciclo tantas veces como quieras.
+
+Cada pregunta crea un ticket y se analiza **por separado**: el modelo no recuerda los mensajes anteriores. La conversación que ves en pantalla se conserva solo mientras esa pestaña siga abierta; los tickets, análisis y revisiones sí quedan en PostgreSQL. La respuesta aprobada o editada aparece en el panel como simulación, pero no se envía fuera de la computadora. Si el sistema bloquea una propuesta, solo permite rechazarla.
+
 ## Problemas frecuentes
 
 - **No encuentra Python 3.11 u Ollama:** instalá el programa faltante y abrí una terminal nueva antes de repetir `01_PREPARAR_NETBOOK.cmd`.

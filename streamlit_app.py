@@ -197,10 +197,135 @@ def analisis():
             mostrar_error(error)
 
 
+def simulacion():
+    st.header("Simulación de atención")
+    st.caption(
+        "Escribí como cliente. La IA prepara una propuesta y vos, como operador, "
+        "decidís qué responder. Cada consulta crea un ticket ficticio."
+    )
+    st.info(
+        "La conversación de esta pantalla dura mientras la pestaña esté abierta. "
+        "Los tickets, análisis y revisiones sí quedan guardados en PostgreSQL. "
+        "Cada consulta se analiza por separado, sin recordar las anteriores."
+    )
+
+    try:
+        clientes = get("/clientes")["clientes"]
+    except APIError as error:
+        mostrar_error(error)
+        return
+    if not clientes:
+        st.warning("Primero cargá los clientes ficticios con 01_PREPARAR_NETBOOK.cmd.")
+        return
+
+    turnos = st.session_state.setdefault("sim_turnos", [])
+    if st.button("Nueva conversación", disabled=not turnos):
+        st.session_state.sim_turnos = []
+        st.rerun()
+
+    cliente = st.selectbox(
+        "Cliente ficticio",
+        clientes,
+        format_func=lambda c: f"{c['nombre']} · {c['plan']}",
+        disabled=bool(turnos),
+        key="sim_cliente",
+    )
+
+    for turno in turnos:
+        with st.chat_message("user"):
+            st.write(turno["pregunta"])
+            st.caption(f"Ticket #{turno['ticket_id']}")
+        revision = turno.get("revision")
+        if revision:
+            with st.chat_message("assistant"):
+                if revision["decision"] == "rechazar":
+                    st.write("El operador rechazó la propuesta. No se preparó una respuesta para el cliente.")
+                else:
+                    st.write(revision["texto_final"])
+                    st.caption(f"Respuesta revisada por el operador · ejecución #{turno['ejecucion_id']}")
+
+    pendiente = turnos[-1] if turnos and not turnos[-1].get("revision") else None
+    if pendiente:
+        if "ejecucion_id" not in pendiente:
+            if st.button("Pedir propuesta a la IA", type="primary"):
+                with st.spinner("Ollama está analizando esta consulta..."):
+                    try:
+                        resultado = post(
+                            f"/tickets/{pendiente['ticket_id']}/analizar", timeout=180
+                        )
+                    except APIError as error:
+                        mostrar_error(error)
+                    else:
+                        pendiente["ejecucion_id"] = resultado["ejecucion_id"]
+                        st.rerun()
+        else:
+            try:
+                ejecucion = get(f"/ejecuciones/{pendiente['ejecucion_id']}")
+            except APIError as error:
+                mostrar_error(error)
+                return
+            if ejecucion["revision"]:
+                pendiente["revision"] = ejecucion["revision"]
+                st.rerun()
+
+            resultado = ejecucion["resultado"]
+            supervision = resultado.get("supervision", {})
+            borrador = resultado.get("borrador", {})
+            with st.container(border=True):
+                st.subheader("Propuesta para el operador")
+                st.write(f"**Categoría:** {resultado.get('triage', {}).get('categoria', 'sin clasificar')}")
+                st.write(f"**Decisión automática:** {supervision.get('decision', 'sin decisión')}")
+                st.write(f"**Borrador:** {borrador.get('texto', '')}")
+                st.write(f"**Citas:** {', '.join(borrador.get('citas', [])) or 'ninguna'}")
+                for documento in resultado.get("evidencia", []):
+                    with st.expander(f"{documento.get('id', '?')} · {documento.get('titulo', '')}"):
+                        st.write(documento.get("texto", "Sin contenido"))
+                if not resultado.get("evidencia"):
+                    st.warning("No se encontró información de respaldo. Revisá el borrador con cuidado.")
+
+            bloqueado = supervision.get("decision") == "bloquear" or bool(
+                ejecucion.get("alerta_seguridad")
+            )
+            opciones = ["rechazar"] if bloqueado else ["aprobar", "editar", "rechazar"]
+            if bloqueado:
+                st.warning("Esta propuesta está bloqueada; solo se puede rechazar.")
+            with st.form(f"sim_revision_{pendiente['ejecucion_id']}"):
+                decision = st.radio("Decisión del operador", opciones, horizontal=True)
+                texto_final = st.text_area("Respuesta corregida (si elegís editar)")
+                motivo = st.text_area("Motivo de la decisión")
+                guardar = st.form_submit_button("Guardar decisión")
+            if guardar:
+                try:
+                    revision = post(
+                        f"/ejecuciones/{pendiente['ejecucion_id']}/revision",
+                        {"decision": decision, "texto_final": texto_final, "motivo": motivo},
+                    )
+                except APIError as error:
+                    mostrar_error(error)
+                else:
+                    pendiente["revision"] = revision
+                    st.rerun()
+    else:
+        pregunta = st.chat_input("Escribí una consulta como cliente ficticio")
+        if pregunta:
+            if not 10 <= len(pregunta.strip()) <= 4000:
+                st.error("La consulta debe tener entre 10 y 4000 caracteres.")
+            else:
+                try:
+                    ticket = post(
+                        "/tickets", {"cliente_id": cliente["id"], "texto": pregunta.strip()}
+                    )
+                except APIError as error:
+                    mostrar_error(error)
+                else:
+                    turnos.append({"ticket_id": ticket["id"], "pregunta": pregunta.strip()})
+                    st.rerun()
+
+
 st.title("SupportOps")
 st.caption("Panel local para soporte asistido por IA")
 with st.sidebar:
-    seccion = st.radio("Sección", ["Resumen", "Tickets", "Análisis y revisión"])
+    seccion = st.radio("Sección", ["Resumen", "Tickets", "Análisis y revisión", "Simulación"])
     st.caption(f"API: {API_URL}")
 
 try:
@@ -214,5 +339,7 @@ if seccion == "Resumen":
     resumen()
 elif seccion == "Tickets":
     tickets()
-else:
+elif seccion == "Análisis y revisión":
     analisis()
+else:
+    simulacion()

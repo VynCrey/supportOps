@@ -6,7 +6,10 @@ y usa otra base de datos; no forma parte de este repositorio.
 
 Para copiar el programa a otra computadora Windows y usarlo de forma local,
 seguí [LEEME_NETBOOK.md](LEEME_NETBOOK.md). Incluye instalación inicial,
-arranque de la API y el panel, y una demostración ficticia.
+arranque de la API y el panel, y una demostración ficticia. La sección
+**Simulación** del panel permite hacer varias consultas libres: cada una crea
+un ticket, la IA propone una respuesta y el operador la revisa. El modelo
+analiza cada consulta por separado y ninguna respuesta se envía a terceros.
 
 ## Estado actual
 
