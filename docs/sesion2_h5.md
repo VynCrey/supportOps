@@ -116,11 +116,15 @@ Se prueban desde http://127.0.0.1:8000/docs. Anotá el código y el mensaje en l
 5. Volver a la normalidad: Ctrl+C, después `Remove-Item Env:SUPPORTOPS_OLLAMA` y `run.py` de nuevo.
 
 **Caso 9, JSON roto del modelo:**
-1. En `llm.py`, cambiá `"num_predict": 600` por `"num_predict": 20` y guardá.
-2. Reiniciá `run.py`.
-3. Mirá la cantidad de ejecuciones del ticket 3 y analizalo.
+1. Cortá `run.py` con Ctrl+C y corré:
+   ```powershell
+   Remove-Item Env:SUPPORTOPS_OLLAMA -ErrorAction SilentlyContinue
+   $env:SUPPORTOPS_NUM_PREDICT = '20'
+   & $py run.py
+   ```
+2. Mirá la cantidad de ejecuciones del ticket 3 y analizalo.
    → Esperado: **502**, "Salida del analisis invalida", y la misma cantidad de ejecuciones.
-4. Volver a la normalidad: `git checkout llm.py` y reiniciá `run.py`.
+3. Volver a la normalidad: Ctrl+C, `Remove-Item Env:SUPPORTOPS_NUM_PREDICT` y `run.py` de nuevo.
 
 ## 4. Cerrar (10 minutos)
 

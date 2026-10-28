@@ -1,7 +1,7 @@
 import json
 from urllib.request import Request, urlopen
 
-from settings import MODEL, OLLAMA
+from settings import MODEL, NUM_PREDICT, OLLAMA
 
 
 def chat(rol: str, datos: dict, esquema: dict) -> dict:
@@ -10,7 +10,7 @@ def chat(rol: str, datos: dict, esquema: dict) -> dict:
         "model": MODEL,
         "stream": False,
         "format": esquema,
-        "options": {"temperature": 0, "num_predict": 600},
+        "options": {"temperature": 0, "num_predict": NUM_PREDICT},
         "messages": [
             {
                 "role": "system",
