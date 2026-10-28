@@ -4,6 +4,10 @@ Este repositorio contiene el proyecto final compartido por Cristian y Marco.
 La carpeta local `backend-python-postgresql` contiene ejercicios de aprendizaje
 y usa otra base de datos; no forma parte de este repositorio.
 
+Para copiar el programa a otra computadora Windows y usarlo de forma local,
+seguí [LEEME_NETBOOK.md](LEEME_NETBOOK.md). Incluye instalación inicial,
+arranque de la API y el panel, y una demostración ficticia.
+
 ## Estado actual
 
 - `schema.sql` define las siete tablas del proyecto en PostgreSQL.
