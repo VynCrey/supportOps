@@ -10,7 +10,7 @@ y usa otra base de datos; no forma parte de este repositorio.
 - `bootstrap.py` crea la base `supportops_final` y carga una muestra ficticia:
   3 clientes, 6 tickets y 18 eventos.
 - `documentos` y `relaciones` se llenan con `cargar_kb.py` a partir de `kb.json`
-  (44 documentos de Marco). Ver [docs/kb_y_recuperacion.md](docs/kb_y_recuperacion.md).
+  (56 documentos y 92 relaciones). Ver [docs/kb_y_recuperacion.md](docs/kb_y_recuperacion.md).
 - `run.py` inicia la API local. Ya permite comprobar la conexion, listar tickets,
   consultar uno con sus eventos, crear tickets y ver cantidades por estado.
 - `db.py` guarda ejecuciones de analisis y una revision humana por ejecucion.
@@ -158,17 +158,22 @@ En la máquina de Cristian, el intérprete está en
 `.\.venv\Scripts\python.exe` por esa ruta en los comandos anteriores.
 
 La evaluación H5 de 20 tickets está en [docs/eval/h5_v2.md](docs/eval/h5_v2.md).
+El [informe de entrega](docs/informe_entrega.md) resume el funcionamiento, las
+pruebas y las limitaciones. H5 quedó documentada con 7/20 casos que cumplen sus
+tres criterios; esto no certifica que los borradores sean seguros para clientes.
 Para recuperar los resultados de ejecuciones ya guardadas, o continuar solo los
 casos pendientes sin crear tickets duplicados, ejecutá `evaluar_h5_local.py`
 con la API local abierta. El script registra resultados automáticos; las
 revisiones humanas se guardan desde el panel.
 
 El volumen final de datos requiere ejecutar el generador en cada instalacion; no
-se incluye un volcado de la base en Git. Los roles necesitan mas pruebas con el
-modelo real y documentos antes de evaluar su calidad.
+se incluye un volcado de la base en Git. La evaluación H5 corresponde a una
+versión anterior a los últimos ajustes del filtro de secretos; hay que repetirla
+con el modelo real para medir esos cambios. El sistema sigue siendo un prototipo
+local con revisión humana obligatoria.
 
-## Contrato de integracion
+## Documentación de integración
 
-Ver [docs/contratos.md](docs/contratos.md). Marco y Cristian deben acordar
-cualquier cambio de nombres o tipos antes de conectar sus modulos.
-Para incorporarse al trabajo, ver [docs/entrega_marco.md](docs/entrega_marco.md).
+El [contrato inicial](docs/contratos.md) y la [entrega inicial a Marco](docs/entrega_marco.md)
+conservan el acuerdo de trabajo de esa etapa. La integración y el estado actual
+están resumidos en el [informe de entrega](docs/informe_entrega.md).
