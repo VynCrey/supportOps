@@ -7,6 +7,7 @@ DB_PORT = int(os.getenv("SUPPORTOPS_DB_PORT", "5432"))
 DB_USER = os.getenv("SUPPORTOPS_DB_USER", "postgres")
 MODEL = os.getenv("SUPPORTOPS_MODEL", "qwen2.5:3b")
 OLLAMA = os.getenv("SUPPORTOPS_OLLAMA", "http://127.0.0.1:11434")
+NUM_PREDICT = int(os.getenv("SUPPORTOPS_NUM_PREDICT", "600"))
 
 CATEGORIES = (
     "acceso",
