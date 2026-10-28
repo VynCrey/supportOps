@@ -4,6 +4,11 @@ Este repositorio contiene el proyecto final compartido por Cristian y Marco.
 La carpeta local `backend-python-postgresql` contiene ejercicios de aprendizaje
 y usa otra base de datos; no forma parte de este repositorio.
 
+El [informe final en PDF](docs/entrega_final/SupportOps_Informe_Proyecto_Integrador_2026.pdf)
+presenta la consigna institucional, el diseño técnico, las pruebas y sus límites,
+las fuentes y las instrucciones de reproducción. La imagen de portada, el logo
+institucional y el generador del PDF están en `docs/entrega_final/`.
+
 Para copiar el programa a otra computadora Windows y usarlo de forma local,
 seguí [LEEME_NETBOOK.md](LEEME_NETBOOK.md). Incluye instalación inicial,
 arranque de la API y el panel, y una demostración ficticia. La sección
