@@ -150,7 +150,7 @@ def header_footer(c, doc):
     c.line(LEFT, 39, W - RIGHT, 39)
     c.setFont("Arial", 7.1)
     c.setFillColor(GRAY)
-    c.drawString(LEFT, 27, "SupportOps · Informe técnico · 28/10/2026")
+    c.drawString(LEFT, 27, "SupportOps · Informe técnico · 2026")
     c.drawRightString(W - RIGHT, 27, f"Página {doc.page}")
     c.restoreState()
 
@@ -242,7 +242,7 @@ table(["ENTREGA", "DATOS"], [
     ["Carrera y espacio", "Tecnicatura Superior en Ciencia de Datos e Inteligencia Artificial · PP: Proyecto Integrador · 3ro 1ra, turno mañana"],
     ["Docente", "Alejandro Luis Bonavita"],
     ["Estudiantes / autores", "Marco Medina y Cristian Monzón"],
-    ["Ciclo lectivo / fecha", "2026 · 28 de octubre de 2026"],
+    ["Ciclo lectivo", "2026"],
 ], [130, CW - 130], small=True)
 story.append(p("Prototipo académico con datos ficticios. Documento digital e imprimible.", "SmallCustom"))
 
