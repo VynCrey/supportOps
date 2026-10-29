@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from html import escape
+import os
 from pathlib import Path
 
 from PIL import Image as PILImage
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
@@ -18,7 +18,6 @@ from reportlab.platypus import (
     Flowable,
     Frame,
     Image,
-    KeepTogether,
     PageBreak,
     PageTemplate,
     Paragraph,
@@ -29,37 +28,39 @@ from reportlab.platypus import (
 
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
-OUT = HERE / "SupportOps_Informe_Proyecto_Integrador_2026.pdf"
+OUT = Path(os.environ.get(
+    "SUPPORTOPS_REPORT_OUTPUT",
+    str(HERE / "SupportOps_Informe_Proyecto_Integrador_2026.pdf"),
+))
 LOGO = HERE / "logo_instituto.png"
 COVER = HERE / "portada_ia.png"
 
-NAVY = colors.HexColor("#132338")
-BLUE = colors.HexColor("#1673B8")
-CYAN = colors.HexColor("#31BDD0")
-LIGHT = colors.HexColor("#EAF3F8")
-PALE = colors.HexColor("#F4F8FB")
-GRAY = colors.HexColor("#526173")
-LINE = colors.HexColor("#C9D9E4")
-GREEN = colors.HexColor("#15715A")
-RED = colors.HexColor("#A9323A")
+NAVY = colors.HexColor("#35443C")
+BLUE = colors.HexColor("#637F70")
+CYAN = colors.HexColor("#C58B72")
+LIGHT = colors.HexColor("#E5ECE2")
+PALE = colors.HexColor("#FBF9F5")
+GRAY = colors.HexColor("#626B64")
+LINE = colors.HexColor("#D6D9D0")
 
 pdfmetrics.registerFont(TTFont("Arial", "C:/Windows/Fonts/arial.ttf"))
 pdfmetrics.registerFont(TTFont("Arial-Bold", "C:/Windows/Fonts/arialbd.ttf"))
 pdfmetrics.registerFontFamily("Arial", normal="Arial", bold="Arial-Bold")
+pdfmetrics.registerFont(TTFont("Georgia", "C:/Windows/Fonts/georgia.ttf"))
+pdfmetrics.registerFont(TTFont("Georgia-Bold", "C:/Windows/Fonts/georgiab.ttf"))
+pdfmetrics.registerFontFamily("Georgia", normal="Georgia", bold="Georgia-Bold")
 
 S = getSampleStyleSheet()
-S.add(ParagraphStyle(name="TitleCustom", fontName="Arial-Bold", fontSize=25, leading=29, textColor=NAVY, spaceAfter=11))
+S.add(ParagraphStyle(name="TitleCustom", fontName="Georgia-Bold", fontSize=25, leading=30, textColor=NAVY, spaceAfter=11))
 S.add(ParagraphStyle(name="SubtitleCustom", fontName="Arial", fontSize=12.5, leading=17, textColor=BLUE, spaceAfter=10))
-S.add(ParagraphStyle(name="SectionCustom", fontName="Arial-Bold", fontSize=16.5, leading=20, textColor=NAVY, spaceBefore=12, spaceAfter=9, keepWithNext=True))
-S.add(ParagraphStyle(name="SubCustom", fontName="Arial-Bold", fontSize=10.8, leading=15, textColor=BLUE, spaceBefore=10, spaceAfter=5, keepWithNext=True))
+S.add(ParagraphStyle(name="SectionCustom", fontName="Georgia-Bold", fontSize=15.5, leading=20, textColor=NAVY, spaceBefore=12, spaceAfter=9, keepWithNext=True))
+S.add(ParagraphStyle(name="SubCustom", fontName="Georgia-Bold", fontSize=10.4, leading=15, textColor=BLUE, spaceBefore=10, spaceAfter=5, keepWithNext=True))
 S.add(ParagraphStyle(name="BodyCustom", fontName="Arial", fontSize=9.1, leading=13.4, textColor=NAVY, spaceAfter=7))
 S.add(ParagraphStyle(name="SmallCustom", fontName="Arial", fontSize=7.7, leading=10.8, textColor=GRAY, spaceAfter=5))
 S.add(ParagraphStyle(name="BulletCustom", fontName="Arial", fontSize=9.0, leading=13.3, leftIndent=12, firstLineIndent=-7, textColor=NAVY, spaceAfter=4))
-S.add(ParagraphStyle(name="TableHeadCustom", fontName="Arial-Bold", fontSize=8, leading=10.5, textColor=colors.white))
+S.add(ParagraphStyle(name="TableHeadCustom", fontName="Arial-Bold", fontSize=8, leading=10.5, textColor=NAVY))
 S.add(ParagraphStyle(name="TableCellCustom", fontName="Arial", fontSize=8.0, leading=10.8, textColor=NAVY))
 S.add(ParagraphStyle(name="TableCellSmallCustom", fontName="Arial", fontSize=7.3, leading=10, textColor=NAVY))
-S.add(ParagraphStyle(name="CalloutCustom", fontName="Arial-Bold", fontSize=9.2, leading=13.5, textColor=NAVY))
 S.add(ParagraphStyle(name="CaptionCustom", fontName="Arial", fontSize=7.6, leading=10.5, textColor=GRAY, alignment=TA_CENTER, spaceBefore=4, spaceAfter=10))
 S.add(ParagraphStyle(name="CoverMetaCustom", fontName="Arial", fontSize=9.5, leading=14, textColor=NAVY))
 
@@ -80,7 +81,7 @@ def safe(text: str) -> str:
 
 
 class Rule(Flowable):
-    def __init__(self, color=BLUE, width=CW, thickness=1.3):
+    def __init__(self, color=BLUE, width=CW, thickness=0.7):
         super().__init__()
         self.width = width
         self.height = 7
@@ -97,13 +98,11 @@ class Pipeline(Flowable):
     def __init__(self):
         super().__init__()
         self.width = CW
-        self.height = 138
+        self.height = 112
 
     def draw(self):
         c = self.canv
-        c.setFillColor(NAVY)
-        c.roundRect(0, 0, CW, 138, 8, fill=1, stroke=0)
-        boxes = [
+        stages = [
             ("Consulta", "ticket"),
             ("Triage", "categoría"),
             ("Búsqueda", "KB"),
@@ -111,28 +110,24 @@ class Pipeline(Flowable):
             ("Supervisor", "y gate"),
             ("Operador", "revisión"),
         ]
-        gap = 6
-        bw = (CW - 28 - gap * 5) / 6
-        for i, (a, b) in enumerate(boxes):
-            x = 14 + i * (bw + gap)
-            c.setFillColor(colors.HexColor("#254565") if i < 5 else colors.HexColor("#176F78"))
-            c.roundRect(x, 49, bw, 55, 5, fill=1, stroke=0)
-            c.setFillColor(colors.white)
-            c.setFont("Arial-Bold", 8.3)
-            c.drawCentredString(x + bw / 2, 80, a)
-            c.setFont("Arial", 7.4)
-            c.drawCentredString(x + bw / 2, 65, b)
-            if i < 5:
-                c.setStrokeColor(CYAN)
-                c.setLineWidth(1.2)
-                x1 = x + bw + 1
-                x2 = x + bw + gap - 1
-                c.line(x1, 76, x2, 76)
-                c.line(x2 - 3, 79, x2, 76)
-                c.line(x2 - 3, 73, x2, 76)
-        c.setFillColor(colors.HexColor("#CFEAF4"))
-        c.setFont("Arial", 8.2)
-        c.drawCentredString(CW / 2, 22, "FastAPI coordina · PostgreSQL guarda tickets y trazas · Ollama ejecuta el modelo local")
+        centers = [26 + i * (CW - 52) / 5 for i in range(6)]
+        c.setStrokeColor(LINE)
+        c.setLineWidth(1.2)
+        c.line(centers[0], 78, centers[-1], 78)
+        for i, ((a, b), x) in enumerate(zip(stages, centers)):
+            c.setFillColor(LIGHT if i < 5 else colors.HexColor("#F3E7DE"))
+            c.setStrokeColor(BLUE if i < 5 else CYAN)
+            c.circle(x, 78, 15, stroke=1, fill=1)
+            c.setFillColor(NAVY)
+            c.setFont("Georgia-Bold", 10)
+            c.drawCentredString(x, 74, str(i + 1))
+            c.setFont("Arial-Bold", 8.2)
+            c.drawCentredString(x, 47, a)
+            c.setFont("Arial", 7.5)
+            c.drawCentredString(x, 34, b)
+        c.setFillColor(GRAY)
+        c.setFont("Arial", 7.7)
+        c.drawCentredString(CW / 2, 9, "FastAPI coordina · PostgreSQL registra · Ollama ejecuta el modelo local")
 
 
 def header_footer(c, doc):
@@ -190,35 +185,19 @@ def table(headers: list[str], rows: list[list[str]], widths: list[float] | None 
     data += [[p(v, cell_style) for v in row] for row in rows]
     t = Table(data, colWidths=widths, hAlign="LEFT", repeatRows=1, splitByRow=1)
     t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("BACKGROUND", (0, 0), (-1, 0), LIGHT),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, PALE]),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("LEFTPADDING", (0, 0), (-1, -1), 7),
         ("RIGHTPADDING", (0, 0), (-1, -1), 7),
         ("TOPPADDING", (0, 0), (-1, -1), 6),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ("LINEBELOW", (0, 0), (-1, 0), 1, BLUE),
+        ("LINEABOVE", (0, 0), (-1, 0), 0.7, BLUE),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.7, BLUE),
         ("LINEBELOW", (0, 1), (-1, -1), 0.3, LINE),
     ]))
     story.append(t)
     story.append(Spacer(1, 9))
-
-
-def callout(text: str, tone="blue"):
-    edge = BLUE if tone == "blue" else (RED if tone == "red" else GREEN)
-    cell = p(text, "CalloutCustom")
-    t = Table([[cell]], colWidths=[CW])
-    t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), LIGHT if tone == "blue" else PALE),
-        ("BOX", (0, 0), (-1, -1), 0.7, LINE),
-        ("LINEBEFORE", (0, 0), (0, 0), 3, edge),
-        ("LEFTPADDING", (0, 0), (-1, -1), 11),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 11),
-        ("TOPPADDING", (0, 0), (-1, -1), 9),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
-    ]))
-    story.append(t)
-    story.append(Spacer(1, 10))
 
 
 def fit_image(path: Path, max_w: float, max_h: float):
@@ -232,7 +211,7 @@ def fit_image(path: Path, max_w: float, max_h: float):
 story.append(Spacer(1, 24))
 story.append(p("SupportOps", "TitleCustom"))
 story.append(p("Agente local de soporte asistido por inteligencia artificial", "SubtitleCustom"))
-story.append(Rule(CYAN, CW, 2))
+story.append(Rule(CYAN, CW, 1.1))
 story.append(Spacer(1, 12))
 story.append(fit_image(COVER, CW, 305))
 story.append(p("Ilustración conceptual generada con IA para esta carátula. El sistema real se documenta y evalúa en las páginas siguientes.", "CaptionCustom"))
@@ -249,7 +228,7 @@ story.append(p("Prototipo académico con datos ficticios. Documento digital e im
 section("Guía de lectura y localización de la entrega", new_page=True)
 para("Este informe sigue los apartados de la plantilla <b>Proyecto Integrador Final</b> del ISFT Nº 197. Documenta lo implementado, las evidencias observadas y los límites de una simulación local. La versión del sistema considerada es <b>main al 28/10/2026</b>.")
 table(["Elemento", "Dónde encontrarlo / cómo acceder"], [
-    ["Código fuente y versión", "<link href='https://github.com/VynCrey/supportOps' color='#1673B8'>github.com/VynCrey/supportOps</link> · rama <b>main</b>. El historial Git conserva los cambios. El PDF acompaña esta entrega en <b>docs/entrega_final/</b>."],
+    ["Código fuente y versión", "<link href='https://github.com/VynCrey/supportOps' color='#637F70'>github.com/VynCrey/supportOps</link> · rama <b>main</b>. El historial Git conserva los cambios. El PDF acompaña esta entrega en <b>docs/entrega_final/</b>."],
     ["Instalación y uso", "<b>LEEME_NETBOOK.md</b> (guía de tres pasos en Windows), <b>README.md</b> (detalle técnico) y los iniciadores <b>01_PREPARAR_NETBOOK.cmd</b>, <b>02_INICIAR_API.cmd</b>, <b>03_ABRIR_PANEL.cmd</b>."],
     ["Datos y acceso", "<b>bootstrap.py</b> genera muestra ficticia; <b>kb.json</b> y <b>cargar_kb.py</b> cargan procedimientos. No se publican contraseñas, base local ni cuentas de clientes reales."],
     ["Evidencia y anexos", "<b>docs/eval/h5_v2.md</b>, <b>docs/eval/tickets_h5.csv</b>, <b>docs/eval/metricas.md</b>, <b>docs/eval/bandit.md</b>, <b>docs/pruebas.md</b>, <b>docs/capturas/</b> y <b>docs/ficha_datos.md</b>."],
@@ -261,9 +240,9 @@ table(["Momento", "Cambio y evidencia"], [
     ["H5 (27/10/2026)", "20 tickets reservados evaluados con versión posterior al PR #5; se conservaron resultados y fallos."],
     ["Versión de entrega", "Ajustes posteriores de seguridad y simulación de conversación; 54 pruebas unitarias correctas el 28/10/2026. H5 no se repitió con esta versión."],
 ], [110, CW - 110])
-callout("Alcance demostrado: sistema local funcional para consultas ficticias y revisión humana. No hay envío automático a clientes ni despliegue de producción.")
+para("El alcance comprobado es un sistema local para consultas ficticias y revisión humana. El panel no envía respuestas a clientes ni constituye un despliegue de producción.")
 
-section("1. Presentación del proyecto", new_page=True)
+section("1. Presentación del proyecto")
 sub("Descripción general")
 para("SupportOps es un prototipo de mesa de ayuda para una organización ficticia con clientes y tickets. Un operador crea o recibe una consulta; la IA clasifica el problema, propone una búsqueda en la base de conocimiento, redacta una respuesta con citas y evalúa si necesita revisión. La persona responsable decide si aprueba, edita o rechaza. La interfaz de simulación permite repetir este ciclo con varias preguntas de un cliente ficticio.")
 sub("Problema y contexto")
@@ -286,7 +265,7 @@ table(["ID", "Requisito", "Estado / verificación"], [
     ["R6", "Reproducirlo en otra Windows.", "Preparación automatizada; guía incluida. Falta validar en la netbook destino."],
 ], [30, 242, CW - 272], small=True)
 
-section("2. Objetivos y alcance", new_page=True)
+section("2. Objetivos y alcance")
 sub("Objetivo general")
 para("Construir y evaluar un sistema local de soporte asistido por IA que transforme consultas ficticias en propuestas respaldadas por documentos, con control humano antes de considerar cualquier respuesta final.")
 sub("Objetivos específicos")
@@ -303,9 +282,9 @@ table(["Incluido en esta entrega", "Fuera del alcance actual"], [
 ], [CW / 2, CW / 2])
 sub("Criterios de aceptación de la entrega")
 para("Se considera demostrable el alcance si una instalación local permite crear un ticket ficticio, ver la propuesta y los documentos consultados, guardar una revisión humana y consultar la traza; si los errores de servicio e insumos inválidos tienen respuesta controlada; y si se entregan código, instrucciones, datos de prueba y resultados medidos. <b>Que la IA produzca respuestas correctas para cualquier caso no es un criterio que el prototipo haya alcanzado.</b>")
-callout("Criterio operativo esencial: una respuesta se muestra al cliente ficticio solo dentro de la simulación después de la decisión del operador; no sale a un canal externo.")
+para("En la simulación, la respuesta final aparece después de la decisión del operador y permanece en esa computadora; no se transmite a un canal externo.")
 
-section("3. Recursos, viabilidad y riesgos", new_page=True)
+section("3. Recursos, viabilidad y riesgos")
 sub("Recursos usados")
 table(["Recurso", "Uso y dependencia"], [
     ["Windows 64 bits + Python 3.11", "Ejecución de API, scripts, pruebas y panel. Biblioteca fijada en requirements.txt."],
@@ -327,7 +306,7 @@ table(["Riesgo", "Impacto", "Tratamiento actual / pendiente"], [
 sub("Uso responsable de datos e IA")
 para("Clientes, tickets y documentos de demostración son ficticios. No se deben cargar nombres, contraseñas, tokens ni documentación privada de una empresa. Los borradores pueden equivocarse o citar material irrelevante; la revisión humana es una condición del flujo. Para una versión real harían falta consentimiento y gobierno de datos, controles de acceso, retención, auditoría, pruebas de seguridad y evaluación con casos representativos antes de cualquier envío externo.")
 
-section("4. Diseño y desarrollo del agente", new_page=True)
+section("4. Diseño y desarrollo del agente")
 sub("Arquitectura y recorrido de una consulta")
 story.append(Pipeline())
 story.append(p("Figura 1. Coordinación secuencial de los componentes. La persona cierra el proceso.", "CaptionCustom"))
@@ -343,7 +322,7 @@ table(["Componente", "Entrada → salida / función"], [
 sub("Decisiones de coordinación")
 para("Se separaron cuatro tareas del modelo para que clasificación, recuperación, redacción y supervisión tengan entradas y salidas auditables. El filtro determinista se ejecuta además de la opinión del supervisor: la revisión del modelo por sí sola mostró errores en pruebas preliminares. Los IDs públicos de tickets se excluyeron de los prompts del modelo para evitar que los confundiera con IDs de la KB; las citas se validan contra documentos realmente recuperados.")
 
-section("4.1 Datos, fuentes y recuperación", new_page=True)
+section("4.1 Datos, fuentes y recuperación")
 sub("Modelo de datos")
 para("El esquema <b>schema.sql</b> contiene siete tablas: clientes, tickets, eventos, documentos, relaciones, ejecuciones y revisiones. Las claves foráneas enlazan tickets con clientes, eventos con tickets y revisiones con ejecuciones. Las salidas del análisis y las trazas se guardan para reconstruir qué propuso el sistema. Los identificadores de los documentos de conocimiento siguen la forma KB-###.")
 table(["Conjunto", "Origen y volumen", "Uso y límite"], [
@@ -358,7 +337,7 @@ para("El modo llamado ‘grafo’ de la recuperación actual prioriza documentos
 sub("EDA sobre datos ficticios")
 para("Una corrida de <b>eda.py</b> sobre el conjunto ampliado, antes de añadir H5, registró 12.001 tickets abiertos (60,0 %), mediana de 59 minutos a la primera respuesta y 205 minutos a resolución, sin inconsistencias de fecha/estado detectadas. Son propiedades del generador y de esa corrida. No se presentan como SLA ni comportamiento de clientes reales.")
 
-section("4.2 IA, revisión y decisiones de implementación", new_page=True)
+section("4.2 IA, revisión y decisiones de implementación")
 sub("Componente de inteligencia artificial")
 para("El modelo <b>qwen2.5:3b</b> se ejecuta localmente con Ollama. Recibe una consulta concreta y contexto limitado, produce categoría, estrategia de búsqueda, borrador con citas y una evaluación. Las respuestas tienen variación entre corridas. La validación estructural rechaza formatos inesperados; una cita inexistente se bloquea. Si no existe evidencia suficiente, el sistema conserva la incertidumbre y solicita revisión, en lugar de dar por correcta una respuesta automática.")
 sub("Revisión humana y seguridad")
@@ -376,7 +355,7 @@ bullet("Ollama evita depender de una API remota para la demostración, con el co
 bullet("FastAPI separa servicio y presentación; Streamlit ofrece una interfaz rápida para un prototipo educativo.")
 bullet("La simulación permite varias consultas, pero cada mensaje es un ticket nuevo e independiente: no hay memoria conversacional del modelo.")
 
-section("5. Pruebas y resultados", new_page=True)
+section("5. Pruebas y resultados")
 sub("Plan y fuentes de verificación")
 para("Se usaron pruebas automatizadas de componentes, consultas de recuperación con respuestas esperadas, una evaluación de veinte tickets de punta a punta (H5) con casos normales y adversos, revisiones humanas guardadas y llamadas a la API ante fallas. Los casos H5 fueron definidos antes de la corrida y no se modificaron prompts, código ni KB entre tickets.")
 table(["Escenario esperado", "Resultado observado", "Evidencia / observación"], [
@@ -389,7 +368,7 @@ table(["Escenario esperado", "Resultado observado", "Evidencia / observación"],
 sub("Pruebas del código actual")
 para("El 28/10/2026 se ejecutó <b>python -m unittest discover -s . -p 'test_*.py' -q</b> con el entorno Python del proyecto: <b>54 pruebas correctas</b>. Comprueban contratos, seguridad, validación, KB, recuperación, API y simulación. Son pruebas rápidas con dobles en varios flujos: no sustituyen el uso real de PostgreSQL y Ollama. Las advertencias de contexto de Streamlit en la consola no hicieron fallar la suite.")
 
-section("5.1 Indicadores cuantitativos", new_page=True)
+section("5.1 Indicadores cuantitativos")
 sub("Evaluación H5 de veinte tickets")
 table(["Indicador", "Cómo se midió", "Resultado"], [
     ["Categoría", "Coincidencia con categoría esperada del CSV.", "14/20 (70 %)"],
@@ -398,7 +377,7 @@ table(["Indicador", "Cómo se midió", "Resultado"], [
     ["Tres criterios juntos", "Cumplimiento simultáneo de los tres anteriores.", "7/20 (35 %)"],
 ], [126, 235, CW - 361])
 para("La corrida H5 se realizó el <b>27/10/2026</b> sobre la versión posterior al PR #5. Los siete casos con los tres criterios cumplidos fueron T03, T08, T13, T16, T17, T18 y T20. <b>No significa que sus borradores fueran seguros o listos para enviar:</b> T16 inventó información sobre cobros, T17 omitió advertir que no compartan el token y T18 no indicó escalar el incidente. Cuatro ejecuciones recibieron revisión humana registrada: T01 y T02 rechazadas, T03 aprobada y T20 editada. Los otros dieciséis casos no tienen esa revisión.")
-callout("Validez temporal: H5 mide una versión anterior. Los cambios de seguridad posteriores tienen pruebas automáticas, pero no una nueva corrida H5 con el modelo real.", "red")
+para("<b>Alcance de esta medición.</b> H5 corresponde a una versión anterior. Los cambios posteriores de seguridad tienen pruebas automáticas, pero todavía no se midieron con otra corrida H5 del modelo real.")
 sub("Recuperación de documentos")
 para("La evaluación de búsqueda fijó <b>20 consultas</b> (15 con respuesta esperada y 5 sin respuesta), KB de 56 documentos y corte en los tres primeros resultados. <b>Hit@3</b> significa que un documento aceptable apareció entre esos tres; <b>MRR@3</b> favorece que aparezca más arriba. Los denominadores de Hit@3 son las 15 consultas respondibles.")
 table(["Estrategia", "Hit@3", "MRR@3", "Lectura"], [
@@ -409,7 +388,7 @@ table(["Estrategia", "Hit@3", "MRR@3", "Lectura"], [
 sub("Exploración de una política adaptativa")
 para("Se probó un bandit contextual ε-greedy con 33 consultas de entrenamiento derivadas de títulos, 15 consultas respondibles de evaluación y cinco semillas. No superó a la mejor estrategia fija: empató en 0,53 o bajó a 0,47 según la semilla. El experimento queda como resultado negativo útil: con estos datos y señales no justifica sustituir el selector actual. Las condiciones están en <b>docs/eval/bandit.md</b>.")
 
-section("5.2 Análisis de errores y límites", new_page=True)
+section("5.2 Análisis de errores y límites")
 sub("Qué se cumplió")
 para("Se construyó el circuito técnico completo: entrada, clasificación, recuperación, borrador, validación, almacenamiento, visualización y decisión humana. Los casos HTTP y las pruebas automáticas cubren fallas previsibles. El informe y el repositorio permiten reproducir la demostración en una computadora Windows con servicios locales.")
 sub("Qué no resolvió la evaluación")
@@ -424,7 +403,7 @@ table(["Corto plazo / evaluación", "Versión futura / uso real"], [
     ["Verificar instalación y rendimiento en la netbook; conservar resultados y tiempos de esa máquina.", "Integración controlada con canales externos y eventual empaquetado/despliegue solo tras evaluación y controles."],
 ], [CW / 2, CW / 2])
 
-section("6. Conclusiones", new_page=True)
+section("6. Conclusiones")
 sub("Balance del proyecto")
 para("SupportOps responde al problema planteado como <b>prototipo académico supervisado</b>: organiza tickets ficticios, consulta una KB, propone respuestas y conserva las decisiones humanas. Su aporte más sólido es el flujo auditable, no una promesa de respuesta automática correcta. Las mediciones muestran deficiencias relevantes de clasificación, recuperación y redacción. El sistema debe seguir bajo revisión humana y no está listo para atender clientes reales.")
 sub("Aprendizajes integrados")
@@ -434,9 +413,9 @@ bullet("Usar efectivamente rutas por síntoma del grafo y ampliar el léxico de 
 bullet("Mejorar las instrucciones y validaciones del borrador para evitar repetir el ticket, prometer acciones inexistentes o mezclar problemas.")
 bullet("Agregar métricas de seguridad y calidad del texto, con revisión humana ciega y comparación entre versiones del mismo conjunto reservado.")
 bullet("Antes de datos reales, desarrollar identidad de usuarios, permisos, gestión de secretos, resguardo de datos y un mecanismo de publicación aprobado por el operador.")
-callout("Conclusión: el proyecto demuestra una arquitectura funcional y medible. La evidencia sostiene una demostración local con clientes ficticios y revisión humana; no sostiene autonomía operativa.", "green")
+para("La evidencia sostiene la demostración local con clientes ficticios y revisión humana. Aún no alcanza para operar de manera autónoma.")
 
-section("7. Reproducción, bibliografía y anexos", new_page=True)
+section("7. Reproducción, bibliografía y anexos")
 sub("Instalar y ejecutar en otra netbook Windows")
 para("La entrega portable se copia mediante <b>SupportOps_netbook.zip</b>, se extrae por completo y se usa sin la PC original encendida. La netbook necesita instalar <b>Python 3.11 de 64 bits</b>, <b>PostgreSQL 18</b> y <b>Ollama</b>. Los paquetes FastAPI, psycopg, Uvicorn y Streamlit se instalan en un entorno virtual desde <b>requirements.txt</b>; el modelo descargado por Ollama es <b>qwen2.5:3b</b>. La descarga inicial requiere Internet, pero el uso posterior es local.")
 table(["Orden", "Acción", "Comprobación"], [
@@ -449,14 +428,14 @@ table(["Orden", "Acción", "Comprobación"], [
 para("El ZIP no contiene la base de datos de la PC original, contraseñas, entorno virtual ni pesos del modelo. Su preparación crea una base nueva con muestra ficticia: los tickets y revisiones anteriores no se trasladan. El paso a paso completo y la solución de problemas están en <b>LEEME_NETBOOK.md</b>. El curso no exige Docker ni AWS para esta demostración, y la entrega actual no los utiliza.")
 sub("Fuentes oficiales para instalar y comprender las herramientas")
 table(["Recurso", "Referencia"], [
-    ["Python 3.11", "<link href='https://docs.python.org/3.11/using/windows.html' color='#1673B8'>docs.python.org/3.11/using/windows.html</link>"],
-    ["PostgreSQL para Windows", "<link href='https://www.postgresql.org/download/windows/' color='#1673B8'>postgresql.org/download/windows/</link>"],
-    ["Ollama / Qwen2.5:3b", "<link href='https://ollama.com/download/windows' color='#1673B8'>ollama.com/download/windows</link> · <link href='https://ollama.com/library/qwen2.5:3b' color='#1673B8'>ollama.com/library/qwen2.5:3b</link>"],
-    ["FastAPI", "<link href='https://fastapi.tiangolo.com/' color='#1673B8'>fastapi.tiangolo.com</link>"],
-    ["Streamlit", "<link href='https://docs.streamlit.io/get-started/installation/command-line' color='#1673B8'>docs.streamlit.io/get-started/installation/command-line</link>"],
+    ["Python 3.11", "<link href='https://docs.python.org/3.11/using/windows.html' color='#637F70'>docs.python.org/3.11/using/windows.html</link>"],
+    ["PostgreSQL para Windows", "<link href='https://www.postgresql.org/download/windows/' color='#637F70'>postgresql.org/download/windows/</link>"],
+    ["Ollama / Qwen2.5:3b", "<link href='https://ollama.com/download/windows' color='#637F70'>ollama.com/download/windows</link> · <link href='https://ollama.com/library/qwen2.5:3b' color='#637F70'>ollama.com/library/qwen2.5:3b</link>"],
+    ["FastAPI", "<link href='https://fastapi.tiangolo.com/' color='#637F70'>fastapi.tiangolo.com</link>"],
+    ["Streamlit", "<link href='https://docs.streamlit.io/get-started/installation/command-line' color='#637F70'>docs.streamlit.io/get-started/installation/command-line</link>"],
 ], [141, CW - 141], small=True)
 
-section("Anexos de evidencia y trazabilidad", new_page=True)
+section("Anexos de evidencia y trazabilidad")
 sub("Mapa de los archivos de verificación")
 table(["Archivo / carpeta", "Contenido verificable"], [
     ["docs/eval/tickets_h5.csv", "Entradas T01–T20, expectativas, IDs, resultados y revisiones."],
@@ -468,16 +447,12 @@ table(["Archivo / carpeta", "Contenido verificable"], [
     ["test_*.py · requirements.txt", "Contratos automatizados y versiones de bibliotecas."],
 ], [181, CW - 181], small=True)
 sub("Capturas de revisiones humanas")
-para("Las capturas originales están en <b>docs/capturas/</b>. Se incluyen aquí ejemplos visuales reducidos. El registro completo se conserva en PostgreSQL local; las imágenes y el CSV respaldan los casos seleccionados de la sesión H5.")
-for filename, caption in [
-    ("h5_rechazar_T01.png", "Figura 2. T01: bloqueo por pedido de clave y rechazo humano."),
-    ("h5_aprobar_T03.png", "Figura 3. T03: documento KB-007 y aprobación registrada."),
-    ("h5_editar_T20.png", "Figura 4. T20: edición humana de la respuesta sobre cobro y avisos."),
-]:
-    path = ROOT / "docs" / "capturas" / filename
-    if path.exists():
-        story.append(fit_image(path, CW, 250))
-        story.append(p(caption, "CaptionCustom"))
+para("Las capturas originales se entregan en <b>docs/capturas/</b> a resolución completa. El CSV y el informe H5 registran el resto de los casos; las revisiones se conservan en la base PostgreSQL local.")
+table(["Caso", "Archivo", "Qué permite comprobar"], [
+    ["T01", "h5_rechazar_T01.png", "Pedido de clave detectado y rechazo humano guardado."],
+    ["T03", "h5_aprobar_T03.png", "Documento KB-007 consultado y aprobación registrada."],
+    ["T20", "h5_editar_T20.png", "Respuesta corregida y motivo de edición guardados."],
+], [44, 168, CW - 212], small=True)
 
 para("Este PDF fue elaborado a partir de la plantilla institucional, el código y los registros del repositorio. La ilustración de portada se generó con IA; el logo se extrajo de la presentación institucional entregada por los estudiantes y mantiene idéntica medida y proporción en todas las páginas.", small=True)
 
