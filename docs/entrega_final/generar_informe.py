@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from html import escape
+import os
 from pathlib import Path
 
 from PIL import Image as PILImage
@@ -30,19 +31,19 @@ from reportlab.platypus import (
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-OUT = HERE / "SupportOps_Informe_Proyecto_Integrador_2026.pdf"
+OUT = Path(os.environ.get(
+    "SUPPORTOPS_REPORT_OUTPUT",
+    str(HERE / "SupportOps_Informe_Proyecto_Integrador_2026.pdf"),
+))
 LOGO = HERE / "logo_instituto.png"
 COVER = HERE / "portada_ia.png"
 
 NAVY = colors.HexColor("#132338")
 BLUE = colors.HexColor("#1673B8")
 CYAN = colors.HexColor("#31BDD0")
-LIGHT = colors.HexColor("#EAF3F8")
 PALE = colors.HexColor("#F4F8FB")
 GRAY = colors.HexColor("#526173")
 LINE = colors.HexColor("#C9D9E4")
-GREEN = colors.HexColor("#15715A")
-RED = colors.HexColor("#A9323A")
 
 pdfmetrics.registerFont(TTFont("Arial", "C:/Windows/Fonts/arial.ttf"))
 pdfmetrics.registerFont(TTFont("Arial-Bold", "C:/Windows/Fonts/arialbd.ttf"))
@@ -59,7 +60,6 @@ S.add(ParagraphStyle(name="BulletCustom", fontName="Arial", fontSize=9.0, leadin
 S.add(ParagraphStyle(name="TableHeadCustom", fontName="Arial-Bold", fontSize=8, leading=10.5, textColor=colors.white))
 S.add(ParagraphStyle(name="TableCellCustom", fontName="Arial", fontSize=8.0, leading=10.8, textColor=NAVY))
 S.add(ParagraphStyle(name="TableCellSmallCustom", fontName="Arial", fontSize=7.3, leading=10, textColor=NAVY))
-S.add(ParagraphStyle(name="CalloutCustom", fontName="Arial-Bold", fontSize=9.2, leading=13.5, textColor=NAVY))
 S.add(ParagraphStyle(name="CaptionCustom", fontName="Arial", fontSize=7.6, leading=10.5, textColor=GRAY, alignment=TA_CENTER, spaceBefore=4, spaceAfter=10))
 S.add(ParagraphStyle(name="CoverMetaCustom", fontName="Arial", fontSize=9.5, leading=14, textColor=NAVY))
 
@@ -204,23 +204,6 @@ def table(headers: list[str], rows: list[list[str]], widths: list[float] | None 
     story.append(Spacer(1, 9))
 
 
-def callout(text: str, tone="blue"):
-    edge = BLUE if tone == "blue" else (RED if tone == "red" else GREEN)
-    cell = p(text, "CalloutCustom")
-    t = Table([[cell]], colWidths=[CW])
-    t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), LIGHT if tone == "blue" else PALE),
-        ("BOX", (0, 0), (-1, -1), 0.7, LINE),
-        ("LINEBEFORE", (0, 0), (0, 0), 3, edge),
-        ("LEFTPADDING", (0, 0), (-1, -1), 11),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 11),
-        ("TOPPADDING", (0, 0), (-1, -1), 9),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
-    ]))
-    story.append(t)
-    story.append(Spacer(1, 10))
-
-
 def fit_image(path: Path, max_w: float, max_h: float):
     with PILImage.open(path) as im:
         w, h = im.size
@@ -261,7 +244,7 @@ table(["Momento", "Cambio y evidencia"], [
     ["H5 (27/10/2026)", "20 tickets reservados evaluados con versión posterior al PR #5; se conservaron resultados y fallos."],
     ["Versión de entrega", "Ajustes posteriores de seguridad y simulación de conversación; 54 pruebas unitarias correctas el 28/10/2026. H5 no se repitió con esta versión."],
 ], [110, CW - 110])
-callout("Alcance demostrado: sistema local funcional para consultas ficticias y revisión humana. No hay envío automático a clientes ni despliegue de producción.")
+para("El alcance comprobado es un sistema local para consultas ficticias y revisión humana. El panel no envía respuestas a clientes ni constituye un despliegue de producción.")
 
 section("1. Presentación del proyecto", new_page=True)
 sub("Descripción general")
@@ -303,7 +286,7 @@ table(["Incluido en esta entrega", "Fuera del alcance actual"], [
 ], [CW / 2, CW / 2])
 sub("Criterios de aceptación de la entrega")
 para("Se considera demostrable el alcance si una instalación local permite crear un ticket ficticio, ver la propuesta y los documentos consultados, guardar una revisión humana y consultar la traza; si los errores de servicio e insumos inválidos tienen respuesta controlada; y si se entregan código, instrucciones, datos de prueba y resultados medidos. <b>Que la IA produzca respuestas correctas para cualquier caso no es un criterio que el prototipo haya alcanzado.</b>")
-callout("Criterio operativo esencial: una respuesta se muestra al cliente ficticio solo dentro de la simulación después de la decisión del operador; no sale a un canal externo.")
+para("En la simulación, la respuesta final aparece después de la decisión del operador y permanece en esa computadora; no se transmite a un canal externo.")
 
 section("3. Recursos, viabilidad y riesgos", new_page=True)
 sub("Recursos usados")
@@ -398,7 +381,7 @@ table(["Indicador", "Cómo se midió", "Resultado"], [
     ["Tres criterios juntos", "Cumplimiento simultáneo de los tres anteriores.", "7/20 (35 %)"],
 ], [126, 235, CW - 361])
 para("La corrida H5 se realizó el <b>27/10/2026</b> sobre la versión posterior al PR #5. Los siete casos con los tres criterios cumplidos fueron T03, T08, T13, T16, T17, T18 y T20. <b>No significa que sus borradores fueran seguros o listos para enviar:</b> T16 inventó información sobre cobros, T17 omitió advertir que no compartan el token y T18 no indicó escalar el incidente. Cuatro ejecuciones recibieron revisión humana registrada: T01 y T02 rechazadas, T03 aprobada y T20 editada. Los otros dieciséis casos no tienen esa revisión.")
-callout("Validez temporal: H5 mide una versión anterior. Los cambios de seguridad posteriores tienen pruebas automáticas, pero no una nueva corrida H5 con el modelo real.", "red")
+para("<b>Alcance de esta medición.</b> H5 corresponde a una versión anterior. Los cambios posteriores de seguridad tienen pruebas automáticas, pero todavía no se midieron con otra corrida H5 del modelo real.")
 sub("Recuperación de documentos")
 para("La evaluación de búsqueda fijó <b>20 consultas</b> (15 con respuesta esperada y 5 sin respuesta), KB de 56 documentos y corte en los tres primeros resultados. <b>Hit@3</b> significa que un documento aceptable apareció entre esos tres; <b>MRR@3</b> favorece que aparezca más arriba. Los denominadores de Hit@3 son las 15 consultas respondibles.")
 table(["Estrategia", "Hit@3", "MRR@3", "Lectura"], [
@@ -434,7 +417,7 @@ bullet("Usar efectivamente rutas por síntoma del grafo y ampliar el léxico de 
 bullet("Mejorar las instrucciones y validaciones del borrador para evitar repetir el ticket, prometer acciones inexistentes o mezclar problemas.")
 bullet("Agregar métricas de seguridad y calidad del texto, con revisión humana ciega y comparación entre versiones del mismo conjunto reservado.")
 bullet("Antes de datos reales, desarrollar identidad de usuarios, permisos, gestión de secretos, resguardo de datos y un mecanismo de publicación aprobado por el operador.")
-callout("Conclusión: el proyecto demuestra una arquitectura funcional y medible. La evidencia sostiene una demostración local con clientes ficticios y revisión humana; no sostiene autonomía operativa.", "green")
+para("La evidencia sostiene la demostración local con clientes ficticios y revisión humana. Aún no alcanza para operar de manera autónoma.")
 
 section("7. Reproducción, bibliografía y anexos", new_page=True)
 sub("Instalar y ejecutar en otra netbook Windows")
