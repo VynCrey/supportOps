@@ -98,6 +98,7 @@ def tickets():
             creado = post("/tickets", {"cliente_id": cliente["id"], "texto": texto})
             st.success(f"Ticket #{creado['id']} creado.")
             st.session_state.ticket_para_analizar = creado["id"]
+            st.session_state.ticket_analizar_id = creado["id"]
         except APIError as error:
             mostrar_error(error)
 
@@ -105,9 +106,12 @@ def tickets():
 def analisis():
     st.header("Análisis y revisión humana")
     st.caption("Cada análisis consulta a Ollama y guarda una ejecución en PostgreSQL.")
+    st.session_state.setdefault(
+        "ticket_analizar_id", st.session_state.get("ticket_para_analizar", 1)
+    )
     ticket_id = st.number_input(
-        "ID del ticket a analizar", min_value=1,
-        value=st.session_state.get("ticket_para_analizar", 1), step=1,
+        "ID del ticket a analizar", min_value=1, step=1,
+        key="ticket_analizar_id",
     )
     try:
         ticket = get(f"/tickets/{ticket_id}")
@@ -172,8 +176,52 @@ def analisis():
     if ejecucion.get("alerta_seguridad"):
         st.warning(ejecucion["alerta_seguridad"])
     if ejecucion["revision"]:
-        st.subheader("Revisión guardada")
-        st.json(ejecucion["revision"])
+        st.subheader("Decisión y correcciones")
+        try:
+            historial = get(f"/ejecuciones/{ejecucion_id}/historial")
+        except APIError as error:
+            mostrar_error(error)
+            return
+        vigente = historial["vigente"]
+        st.write(f"**Decisión vigente:** {vigente['decision']}")
+        if vigente.get("texto_final"):
+            st.write(vigente["texto_final"])
+        st.caption(f"Motivo: {vigente['motivo']}")
+        registros = [
+            {"versión": 1, "decisión": historial["original"]["decision"],
+             "motivo": historial["original"]["motivo"],
+             "fecha": historial["original"]["creado"]}
+        ]
+        registros.extend(
+            {"versión": numero, "decisión": c["decision"],
+             "motivo": c["motivo"], "fecha": c["creado"]}
+            for numero, c in enumerate(historial["correcciones"], start=2)
+        )
+        with st.expander("Ver historial completo"):
+            st.dataframe(registros, hide_index=True)
+        with st.expander("Corregir una decisión anterior"):
+            st.caption("La versión anterior se conserva. Si el cliente ya la vio, verá una rectificación.")
+            with st.form(f"corregir_{ejecucion_id}"):
+                decision_nueva = st.segmented_control(
+                    "Nueva decisión", ["editar", "rechazar"], default="editar"
+                )
+                respuesta_nueva = st.text_area("Respuesta corregida")
+                motivo_nuevo = st.text_area("Motivo de la corrección")
+                operador = st.text_input("Operador", value="Operador demo")
+                corregir = st.form_submit_button("Guardar corrección")
+            if corregir:
+                try:
+                    post(f"/ejecuciones/{ejecucion_id}/correcciones", {
+                        "decision": decision_nueva,
+                        "texto_final": respuesta_nueva,
+                        "motivo": motivo_nuevo,
+                        "operador": operador,
+                    })
+                except APIError as error:
+                    mostrar_error(error)
+                else:
+                    st.success("Corrección guardada sin borrar la versión anterior.")
+                    st.rerun()
         return
 
     st.subheader("Registrar revisión")
@@ -322,10 +370,73 @@ def simulacion():
                     st.rerun()
 
 
+def productos_soporte():
+    st.header("Productos y pedidos")
+    st.caption("Catálogo y compras ficticias de la tienda local.")
+    try:
+        productos = get("/productos")["productos"]
+        pedidos = get("/pedidos")["pedidos"]
+    except APIError as error:
+        mostrar_error(error)
+        return
+    st.subheader("Catálogo")
+    st.dataframe(
+        [{"Código": p["id"], "Producto": p["nombre"],
+          "Categoría": p["categoria"], "Precio": p["precio"],
+          "Unidades": p["stock"]} for p in productos],
+        hide_index=True,
+    )
+    st.subheader("Pedidos simulados recientes")
+    if pedidos:
+        st.dataframe(
+            [{"Pedido": p["id"], "Cliente": p["cliente"],
+              "Producto": p["producto"], "Cantidad": p["cantidad"],
+              "Total": p["total"]} for p in pedidos],
+            hide_index=True,
+        )
+    else:
+        st.caption("Todavía no hay pedidos.")
+
+
+def reclamos_soporte():
+    st.header("Bandeja de reclamos")
+    st.caption("Consultas enviadas desde la pantalla del cliente ficticio.")
+    try:
+        reclamos = get("/reclamos")["reclamos"]
+    except APIError as error:
+        mostrar_error(error)
+        return
+    if not reclamos:
+        st.info("No hay reclamos nuevos.")
+        return
+    for reclamo in reclamos:
+        with st.container(border=True):
+            st.write(
+                f"**Ticket #{reclamo['ticket_id']} · {reclamo['cliente']}**"
+            )
+            st.caption(
+                f"Reclamo #{reclamo['id']} · "
+                f"{reclamo.get('producto') or 'Consulta general'}"
+                + (f" · Pedido #{reclamo['pedido_id']}" if reclamo.get("pedido_id") else "")
+            )
+            st.write(reclamo["texto"])
+            if st.button("Abrir para analizar", key=f"abrir_{reclamo['ticket_id']}"):
+                st.session_state.ticket_analizar_id = reclamo["ticket_id"]
+                st.session_state.ir_analisis = True
+                st.rerun()
+
+
 st.title("SupportOps")
-st.caption("Panel local para soporte asistido por IA")
+st.caption("Panel de soporte · Tienda Faro ficticia · Ollama local")
+if st.session_state.pop("ir_analisis", False):
+    st.session_state.seccion = "Análisis y revisión"
 with st.sidebar:
-    seccion = st.radio("Sección", ["Resumen", "Tickets", "Análisis y revisión", "Simulación"])
+    seccion = st.radio(
+        "Sección",
+        ["Resumen", "Reclamos", "Productos y pedidos", "Tickets",
+         "Análisis y revisión", "Simulación"],
+        key="seccion",
+    )
     st.caption(f"API: {API_URL}")
 
 try:
@@ -339,6 +450,10 @@ if seccion == "Resumen":
     resumen()
 elif seccion == "Tickets":
     tickets()
+elif seccion == "Reclamos":
+    reclamos_soporte()
+elif seccion == "Productos y pedidos":
+    productos_soporte()
 elif seccion == "Análisis y revisión":
     analisis()
 else:

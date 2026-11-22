@@ -264,3 +264,221 @@ class SupportOpsDB:
             "abiertos": abiertos,
             "resueltos": resueltos,
         }
+
+    def listar_productos(self):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, nombre, categoria, descripcion, precio, stock "
+                "FROM productos ORDER BY categoria, nombre"
+            )
+            return cursor.fetchall()
+
+    def listar_pedidos(self, cliente_id: int | None = None):
+        consulta = """
+            SELECT p.id, p.cliente_id, c.nombre AS cliente, p.producto_id,
+                   pr.nombre AS producto, p.cantidad, p.precio_unitario,
+                   p.cantidad * p.precio_unitario AS total, p.estado, p.creado
+            FROM pedidos AS p
+            JOIN clientes AS c ON c.id = p.cliente_id
+            JOIN productos AS pr ON pr.id = p.producto_id
+        """
+        parametros = ()
+        if cliente_id is not None:
+            consulta += " WHERE p.cliente_id = %s"
+            parametros = (cliente_id,)
+        consulta += " ORDER BY p.id DESC LIMIT 100"
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute(consulta, parametros)
+            return cursor.fetchall()
+
+    def crear_pedido(self, cliente_id: int, producto_id: str, cantidad: int):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute("SELECT nombre FROM clientes WHERE id = %s", (cliente_id,))
+            cliente = cursor.fetchone()
+            if cliente is None:
+                raise LookupError("Cliente ficticio no encontrado")
+            cursor.execute(
+                "SELECT id, nombre, precio, stock FROM productos WHERE id = %s FOR UPDATE",
+                (producto_id,),
+            )
+            producto = cursor.fetchone()
+            if producto is None:
+                raise LookupError("Producto no encontrado")
+            if producto["stock"] < cantidad:
+                raise ValueError("No hay stock ficticio suficiente")
+            cursor.execute(
+                "UPDATE productos SET stock = stock - %s WHERE id = %s",
+                (cantidad, producto_id),
+            )
+            cursor.execute(
+                """
+                INSERT INTO pedidos (cliente_id, producto_id, cantidad, precio_unitario)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id, estado, creado
+                """,
+                (cliente_id, producto_id, cantidad, producto["precio"]),
+            )
+            fila = cursor.fetchone()
+            return {
+                **fila, "cliente_id": cliente_id, "cliente": cliente["nombre"],
+                "producto_id": producto_id, "producto": producto["nombre"],
+                "cantidad": cantidad, "precio_unitario": producto["precio"],
+                "total": cantidad * producto["precio"],
+            }
+
+    def crear_reclamo(self, cliente_id: int, texto: str,
+                      producto_id: str | None = None,
+                      pedido_id: int | None = None):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute(
+                "SELECT nombre, plan FROM clientes WHERE id = %s", (cliente_id,)
+            )
+            cliente = cursor.fetchone()
+            if cliente is None:
+                raise LookupError("Cliente ficticio no encontrado")
+            if producto_id is not None:
+                cursor.execute("SELECT nombre FROM productos WHERE id = %s", (producto_id,))
+                if cursor.fetchone() is None:
+                    raise LookupError("Producto no encontrado")
+            if pedido_id is not None:
+                cursor.execute(
+                    "SELECT producto_id FROM pedidos WHERE id = %s AND cliente_id = %s",
+                    (pedido_id, cliente_id),
+                )
+                pedido = cursor.fetchone()
+                if pedido is None:
+                    raise LookupError("Pedido no encontrado para este cliente")
+                if producto_id is not None and pedido["producto_id"] != producto_id:
+                    raise ValueError("El producto no corresponde al pedido")
+                producto_id = pedido["producto_id"]
+            cursor.execute(
+                "INSERT INTO tickets (cliente_id, texto) VALUES (%s, %s) "
+                "RETURNING id, prioridad, estado, creado",
+                (cliente_id, texto),
+            )
+            ticket = cursor.fetchone()
+            cursor.execute(
+                "INSERT INTO reclamos (ticket_id, pedido_id, producto_id) "
+                "VALUES (%s, %s, %s) RETURNING id",
+                (ticket["id"], pedido_id, producto_id),
+            )
+            reclamo = cursor.fetchone()
+            return {
+                **ticket, "reclamo_id": reclamo["id"], "ticket_id": ticket["id"],
+                "cliente_id": cliente_id, "cliente": cliente["nombre"],
+                "plan": cliente["plan"], "texto": texto,
+                "producto_id": producto_id, "pedido_id": pedido_id,
+            }
+
+    def listar_reclamos(self, cliente_id: int | None = None):
+        consulta = """
+            SELECT r.id, r.ticket_id, r.pedido_id, r.producto_id,
+                   pr.nombre AS producto, t.cliente_id, c.nombre AS cliente,
+                   t.texto, t.estado, t.creado
+            FROM reclamos AS r
+            JOIN tickets AS t ON t.id = r.ticket_id
+            JOIN clientes AS c ON c.id = t.cliente_id
+            LEFT JOIN productos AS pr ON pr.id = r.producto_id
+        """
+        parametros = ()
+        if cliente_id is not None:
+            consulta += " WHERE t.cliente_id = %s"
+            parametros = (cliente_id,)
+        consulta += " ORDER BY r.id DESC LIMIT 100"
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute(consulta, parametros)
+            return cursor.fetchall()
+
+    def contexto_reclamo(self, ticket_id: int):
+        """Datos de un único producto/pedido ficticio, sin datos de otros clientes."""
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT r.producto_id, pr.nombre AS producto,
+                       pr.descripcion, pr.precio, pr.stock,
+                       r.pedido_id, p.estado AS estado_pedido, p.cantidad
+                FROM reclamos AS r
+                LEFT JOIN productos AS pr ON pr.id = r.producto_id
+                LEFT JOIN pedidos AS p ON p.id = r.pedido_id
+                WHERE r.ticket_id = %s
+                """,
+                (ticket_id,),
+            )
+            return cursor.fetchone()
+
+    def es_reclamo(self, ticket_id: int) -> bool:
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM reclamos WHERE ticket_id = %s", (ticket_id,))
+            return cursor.fetchone() is not None
+
+    def historial_revision(self, ejecucion_id: int):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT r.id, r.ejecucion_id, r.decision, r.texto_final,
+                       r.motivo, r.creado
+                FROM revisiones AS r WHERE r.ejecucion_id = %s
+                """,
+                (ejecucion_id,),
+            )
+            original = cursor.fetchone()
+            if original is None:
+                return None
+            cursor.execute(
+                """
+                SELECT id, revision_id, decision, texto_final, motivo,
+                       operador, creado
+                FROM correcciones WHERE revision_id = %s ORDER BY id
+                """,
+                (original["id"],),
+            )
+            correcciones = cursor.fetchall()
+            return {
+                "original": original, "correcciones": correcciones,
+                "vigente": correcciones[-1] if correcciones else original,
+            }
+
+    def guardar_correccion(self, ejecucion_id: int, decision: str,
+                           texto_final: str, motivo: str, operador: str):
+        if decision not in ("editar", "rechazar"):
+            raise ValueError("La correccion debe editar o retirar la respuesta")
+        if not motivo.strip():
+            raise ValueError("La correccion necesita un motivo")
+        texto_final = texto_final.strip() if decision == "editar" else ""
+        if decision == "editar" and not texto_final:
+            raise ValueError("Escribi la respuesta corregida")
+        if decision == "editar" and pide_credenciales({"texto": texto_final}):
+            raise ValueError("La correccion solicita credenciales")
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT r.id, e.resultado
+                FROM revisiones AS r
+                JOIN ejecuciones AS e ON e.id = r.ejecucion_id
+                WHERE r.ejecucion_id = %s FOR UPDATE OF r
+                """,
+                (ejecucion_id,),
+            )
+            original = cursor.fetchone()
+            if original is None:
+                return None
+            resultado = original["resultado"]
+            if decision == "editar" and (
+                resultado.get("supervision", {}).get("decision") == "bloquear"
+                or pide_credenciales(
+                    resultado.get("borrador", {}),
+                    resultado.get("triage", {}).get("faltantes", []),
+                )
+            ):
+                raise ValueError("Un analisis bloqueado no puede publicarse")
+            cursor.execute(
+                """
+                INSERT INTO correcciones
+                    (revision_id, decision, texto_final, motivo, operador)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id, revision_id, decision, texto_final, motivo,
+                          operador, creado
+                """,
+                (original["id"], decision, texto_final, motivo.strip(), operador.strip()),
+            )
+            return cursor.fetchone()

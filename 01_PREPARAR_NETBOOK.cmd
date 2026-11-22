@@ -8,6 +8,7 @@ echo.
 if not exist "requirements.txt" goto carpeta_incompleta
 if not exist "schema.sql" goto carpeta_incompleta
 if not exist "kb.json" goto carpeta_incompleta
+if not exist "catalogo_demo.json" goto carpeta_incompleta
 
 set "PYTHON=py -3.11"
 py -3.11 --version >nul 2>&1
@@ -38,7 +39,7 @@ echo [2/4] Instalando las bibliotecas del proyecto...
 ".venv\Scripts\python.exe" -m pip install -r "requirements.txt"
 if errorlevel 1 goto fallo
 
-echo [3/4] Creando la base y los clientes ficticios...
+echo [3/4] Creando la base, los clientes y el catalogo ficticios...
 echo Escribi la contrasena del usuario postgres de ESTA computadora.
 ".venv\Scripts\python.exe" "bootstrap.py"
 if errorlevel 1 goto fallo
@@ -53,7 +54,7 @@ ollama pull qwen2.5:3b
 if errorlevel 1 goto fallo
 
 echo.
-echo Preparacion terminada. Abri 02_INICIAR_API.cmd y despues 03_ABRIR_PANEL.cmd.
+echo Preparacion terminada. Abri 02_INICIAR_API.cmd, 03_ABRIR_PANEL.cmd y 04_ABRIR_CLIENTE.cmd.
 pause
 exit /b 0
 
