@@ -61,3 +61,25 @@ def pide_credenciales(borrador: dict, faltantes: list[str] | None = None) -> boo
     campos = [borrador.get("texto", ""), *(borrador.get("preguntas") or []),
               *(faltantes or [])]
     return any(_pide_secreto(item) for item in campos if isinstance(item, str))
+
+
+def motivo_consulta_restringida(texto: str) -> str | None:
+    """Bloquea pedidos explícitos de datos internos e instrucciones inyectadas."""
+    normal = _normalizar(texto)
+    if re.search(
+        r"\b(?:dame|mostra\w*|muestra\w*|envia\w*|pasame|exporta\w*|"
+        r"descarga\w*|entrega\w*)\b.{0,80}"
+        r"\b(?:toda\s+(?:tu|la)\s+base\s+de\s+datos|"
+        r"todos\s+los\s+(?:clientes|tickets|pedidos)|"
+        r"tabla\s+(?:completa|de\s+clientes)|contrase[nñ]as?\s+de\s+clientes)\b",
+        normal,
+    ):
+        return "Solicitud de datos internos o masivos"
+    if re.search(
+        r"\b(?:ignora\w*|olvida\w*|desobedece\w*)\b.{0,70}"
+        r"\b(?:instrucciones|reglas|sistema|prompt)\b|"
+        r"\b(?:actua|responde)\s+como\s+(?:el\s+)?(?:sistema|administrador)\b",
+        normal,
+    ):
+        return "Instrucciones no confiables en la consulta"
+    return None

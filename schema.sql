@@ -68,3 +68,46 @@ CREATE TABLE IF NOT EXISTS revisiones (
     motivo TEXT NOT NULL,
     creado TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Tienda ficticia: no se registran pagos ni datos bancarios.
+CREATE TABLE IF NOT EXISTS productos (
+    id TEXT PRIMARY KEY,
+    nombre TEXT NOT NULL,
+    categoria TEXT NOT NULL,
+    descripcion TEXT NOT NULL,
+    precio NUMERIC(10, 2) NOT NULL CHECK (precio >= 0),
+    stock INTEGER NOT NULL CHECK (stock >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS pedidos (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    cliente_id BIGINT NOT NULL REFERENCES clientes(id),
+    producto_id TEXT NOT NULL REFERENCES productos(id),
+    cantidad INTEGER NOT NULL CHECK (cantidad BETWEEN 1 AND 10),
+    precio_unitario NUMERIC(10, 2) NOT NULL CHECK (precio_unitario >= 0),
+    estado TEXT NOT NULL DEFAULT 'simulado' CHECK (estado = 'simulado'),
+    creado TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS ix_pedidos_cliente ON pedidos(cliente_id);
+
+CREATE TABLE IF NOT EXISTS reclamos (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ticket_id BIGINT NOT NULL UNIQUE REFERENCES tickets(id),
+    pedido_id BIGINT REFERENCES pedidos(id),
+    producto_id TEXT REFERENCES productos(id),
+    creado TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- La revisión original permanece intacta. Cada corrección es un evento nuevo.
+CREATE TABLE IF NOT EXISTS correcciones (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    revision_id BIGINT NOT NULL REFERENCES revisiones(id),
+    decision TEXT NOT NULL CHECK (decision IN ('aprobar', 'editar', 'rechazar')),
+    texto_final TEXT NOT NULL DEFAULT '',
+    motivo TEXT NOT NULL,
+    operador TEXT NOT NULL,
+    creado TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS ix_correcciones_revision ON correcciones(revision_id, id);

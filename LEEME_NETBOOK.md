@@ -6,7 +6,7 @@ Esta copia funciona **sin la computadora original encendida**. Streamlit es la p
 
 Copiá `SupportOps_netbook.zip` a la netbook y **extraé todo el ZIP** en una carpeta, por ejemplo `C:\SupportOps`. Ejecutá los archivos `.cmd` dentro de esa carpeta extraída, nunca desde la vista previa del ZIP. El paquete contiene el código, el esquema y la base de conocimiento ficticia.
 
-El ZIP no contiene la base PostgreSQL de la otra computadora, contraseñas, el entorno `.venv` ni el modelo de Ollama. Esos componentes se crean o instalan **una vez en la netbook**. La copia arranca con 3 clientes, 6 tickets y 56 documentos ficticios; no trae las ejecuciones y revisiones hechas en la computadora original. No hace falta cargar 20.000 tickets para mostrar el programa.
+El ZIP no contiene la base PostgreSQL de la otra computadora, contraseñas, el entorno `.venv` ni el modelo de Ollama. Esos componentes se crean o instalan **una vez en la netbook**. La copia arranca con 3 clientes, 6 tickets, 8 productos y 56 documentos ficticios; no trae las ejecuciones y revisiones hechas en la computadora original. No hace falta cargar 20.000 tickets para mostrar el programa.
 
 ## 1. Instalar los tres programas necesarios
 
@@ -34,6 +34,16 @@ Esperá el mensaje **«Preparacion terminada»**. Si falla, leé el error de la 
 
 1. Hacé doble clic en **`02_INICIAR_API.cmd`**. Ingresá la contraseña de PostgreSQL y dejá abierta esa ventana. Verificá en el navegador: <http://127.0.0.1:8000/health>. Debe aparecer `"estado": "ok"` y `"base": "conectada"`.
 2. Hacé doble clic en **`03_ABRIR_PANEL.cmd`** y dejá abierta esa segunda ventana. Si Streamlit pide un correo la primera vez, podés presionar Enter. Abrí <http://127.0.0.1:8501>.
+3. Hacé doble clic en **`04_ABRIR_CLIENTE.cmd`**. Abrí <http://127.0.0.1:8502> para la pantalla del cliente ficticio. Las tres ventanas deben quedar abiertas durante la demostración.
+
+## Demostración de las dos pantallas
+
+1. En la pantalla del cliente, elegí un cliente ficticio, mirá el catálogo y hacé una compra simulada. No se cobra dinero real.
+2. En **Mis reclamos**, seleccioná el pedido o producto, escribí una consulta y, si querés, adjuntá un PDF de texto de hasta 2 MB y 5 páginas. El archivo no se conserva; solo se agrega el texto extraído al ticket como material no confiable.
+3. En la pantalla de soporte, abrí **Reclamos**, seleccioná el ticket y tocá **Analizar ticket**. Revisá la propuesta, sus citas y la evidencia. Si el resultado no corresponde, elegí **editar** y escribí una respuesta correcta, o **rechazar** si no puede responderse.
+4. Tras guardar la revisión, actualizá **Mis reclamos** en la pantalla del cliente. Solo se muestra la respuesta revisada. Si soporte detecta luego un error, puede registrar una **corrección posterior** con motivo; el cliente ve la nueva versión y el historial conserva la anterior.
+
+Las consultas que piden una extracción masiva de datos internos o contienen órdenes para cambiar las instrucciones del agente se separan del modelo y pasan a revisión humana. El programa corre solo en `127.0.0.1`; la selección de clientes es una simulación, no una autenticación para Internet.
 3. Para terminar, presioná **Ctrl+C** en cada una de las dos ventanas.
 
 La primera llamada al modelo puede tardar. Si el panel dice que la API no está disponible, comprobá que la ventana de `02_INICIAR_API.cmd` siga abierta y que `/health` responda.

@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from getpass import getpass
 from pathlib import Path
+import json
 
 import psycopg
 from psycopg import sql
@@ -9,6 +10,7 @@ from settings import DB_HOST, DB_NAME, DB_PORT, DB_USER
 
 
 SCHEMA = Path(__file__).with_name("schema.sql")
+CATALOGO = Path(__file__).with_name("catalogo_demo.json")
 
 CLIENTES = (
     ("Cliente demo 1", "Basic"),
@@ -111,6 +113,24 @@ def cargar_muestra(cursor) -> bool:
     return True
 
 
+def cargar_catalogo(cursor) -> int:
+    """Agrega únicamente productos faltantes; conserva el stock de ventas locales."""
+    productos = json.loads(CATALOGO.read_text(encoding="utf-8"))
+    nuevos = 0
+    for producto in productos:
+        cursor.execute(
+            """
+            INSERT INTO productos (id, nombre, categoria, descripcion, precio, stock)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (id) DO NOTHING
+            """,
+            (producto["id"], producto["nombre"], producto["categoria"],
+             producto["descripcion"], producto["precio"], producto["stock"]),
+        )
+        nuevos += cursor.rowcount
+    return nuevos
+
+
 def main() -> None:
     clave = getpass("Contrasena de PostgreSQL: ")
     crear_base_si_falta(clave)
@@ -125,8 +145,9 @@ def main() -> None:
         with conexion.cursor() as cursor:
             aplicar_esquema(cursor)
             creada = cargar_muestra(cursor)
+            nuevos_productos = cargar_catalogo(cursor)
             cantidades = {}
-            for tabla in ("clientes", "tickets", "eventos", "documentos"):
+            for tabla in ("clientes", "tickets", "eventos", "documentos", "productos"):
                 cursor.execute(
                     sql.SQL("SELECT count(*) FROM {}").format(sql.Identifier(tabla))
                 )
@@ -134,6 +155,7 @@ def main() -> None:
 
     print("Muestra cargada." if creada else "Ya habia datos; no se duplicaron.")
     print("Cantidades:", cantidades)
+    print(f"Productos ficticios agregados: {nuevos_productos}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,10 @@
+[
+  {"id":"PR-001","nombre":"Auriculares inalámbricos Nube","categoria":"Audio","descripcion":"Auriculares ficticios con estuche de carga y garantía de demostración de 12 meses.","precio":34990.00,"stock":18},
+  {"id":"PR-002","nombre":"Teclado compacto Sur","categoria":"Computación","descripcion":"Teclado ficticio de 75 teclas con conexión USB-C.","precio":27990.00,"stock":14},
+  {"id":"PR-003","nombre":"Mouse ergonómico Río","categoria":"Computación","descripcion":"Mouse ficticio inalámbrico para uso de oficina.","precio":19990.00,"stock":22},
+  {"id":"PR-004","nombre":"Lámpara de escritorio Faro","categoria":"Hogar","descripcion":"Lámpara ficticia de luz regulable para escritorio.","precio":25990.00,"stock":9},
+  {"id":"PR-005","nombre":"Cargador USB-C Duna","categoria":"Accesorios","descripcion":"Cargador ficticio de 30 W con cable incluido.","precio":16990.00,"stock":27},
+  {"id":"PR-006","nombre":"Mochila urbana Delta","categoria":"Accesorios","descripcion":"Mochila ficticia para notebook de hasta 15 pulgadas.","precio":52990.00,"stock":11},
+  {"id":"PR-007","nombre":"Parlante portátil Brisa","categoria":"Audio","descripcion":"Parlante ficticio de tamaño compacto con batería recargable.","precio":42990.00,"stock":7},
+  {"id":"PR-008","nombre":"Soporte plegable Litoral","categoria":"Computación","descripcion":"Soporte ficticio para elevar notebooks durante el trabajo.","precio":22990.00,"stock":16}
+]

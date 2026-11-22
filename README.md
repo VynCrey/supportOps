@@ -4,37 +4,43 @@ Este repositorio contiene el proyecto final compartido por Cristian y Marco.
 La carpeta local `backend-python-postgresql` contiene ejercicios de aprendizaje
 y usa otra base de datos; no forma parte de este repositorio.
 
-El [informe final en PDF](docs/entrega_final/SupportOps_Informe_Proyecto_Integrador_2026.pdf)
+El [informe técnico final en PDF](docs/entrega_final/SupportOps_Informe_Tecnico_2026.pdf)
 presenta la consigna institucional, el diseño técnico, las pruebas y sus límites,
 las fuentes y las instrucciones de reproducción. La imagen de portada, el logo
 institucional y el generador del PDF están en `docs/entrega_final/`.
 
 Para copiar el programa a otra computadora Windows y usarlo de forma local,
 seguí [LEEME_NETBOOK.md](LEEME_NETBOOK.md). Incluye instalación inicial,
-arranque de la API y el panel, y una demostración ficticia. La sección
+arranque de la API y las dos pantallas, y una demostración ficticia. La sección
 **Simulación** del panel permite hacer varias consultas libres: cada una crea
 un ticket, la IA propone una respuesta y el operador la revisa. El modelo
 analiza cada consulta por separado y ninguna respuesta se envía a terceros.
 
-## Estado actual
+## Sistema local de demostración
 
-- `schema.sql` define las siete tablas del proyecto en PostgreSQL.
+- `schema.sql` define once tablas: las siete originales y productos, pedidos,
+  reclamos y correcciones posteriores.
 - `bootstrap.py` crea la base `supportops_final` y carga una muestra ficticia:
   3 clientes, 6 tickets y 18 eventos.
 - `documentos` y `relaciones` se llenan con `cargar_kb.py` a partir de `kb.json`
   (56 documentos y 92 relaciones). Ver [docs/kb_y_recuperacion.md](docs/kb_y_recuperacion.md).
 - `run.py` inicia la API local. Ya permite comprobar la conexion, listar tickets,
   consultar uno con sus eventos, crear tickets y ver cantidades por estado.
-- `db.py` guarda ejecuciones de analisis y una revision humana por ejecucion.
-  La API permite consultar ambas cuando existan.
+- `db.py` guarda ejecuciones, revisiones humanas y correcciones con historial,
+  además del catálogo, las compras simuladas y los reclamos.
 - `analysis.py` coordina cuatro roles, comprueba las salidas, aplica el gate y
   guarda la ejecucion. `llm.py` llama al modelo local de Ollama.
 - `knowledge_adapter.py` conecta con `retrieval.py` de Marco (lexical, grafo e
   hibrido sobre PostgreSQL). Si el archivo faltara, la evidencia es vacia y el
   resultado lo indica claramente.
 - La API incluye analisis de tickets, consulta de ejecuciones y revision humana.
-- `streamlit_app.py` ofrece un panel local para listar y crear tickets, ejecutar
-  analisis y guardar revisiones.
+- `streamlit_app.py` ofrece la pantalla de soporte para analizar, revisar y
+  rectificar. `cliente_app.py` muestra el catálogo ficticio, permite registrar
+  pedidos y reclamos y enseña únicamente respuestas revisadas.
+- Los reclamos pueden incluir texto extraído de un PDF pequeño. El archivo no
+  se guarda ni ejecuta. Las instrucciones dentro de consultas y PDF son datos
+  no confiables; los pedidos de datos internos masivos pasan a revisión sin
+  consultar al modelo.
 - `generar_datos.py` puede ampliar la muestra hasta 500 clientes, 20.000
   tickets y 60.000 eventos ficticios. No agrega documentos: esa parte corresponde
   a la base de conocimiento de Marco.
