@@ -20,6 +20,29 @@ class SupportOpsDB:
             row_factory=dict_row,
         )
 
+    @staticmethod
+    def _registrar_estado_ticket(cursor, ticket_id: int, publicado: bool,
+                                 tipo_evento: str):
+        if publicado:
+            cursor.execute(
+                """
+                UPDATE tickets SET estado = 'resuelto',
+                    primera_respuesta = COALESCE(primera_respuesta, now()),
+                    resuelto = now()
+                WHERE id = %s
+                """,
+                (ticket_id,),
+            )
+        else:
+            cursor.execute(
+                "UPDATE tickets SET estado = 'abierto', resuelto = NULL WHERE id = %s",
+                (ticket_id,),
+            )
+        cursor.execute(
+            "INSERT INTO eventos (ticket_id, tipo, momento) VALUES (%s, %s, now())",
+            (ticket_id, tipo_evento),
+        )
+
     def comprobar(self):
         with self.conectar() as conexion:
             with conexion.cursor() as cursor:
@@ -201,7 +224,7 @@ class SupportOpsDB:
                 # Bloquea esta ejecucion hasta terminar la transaccion. Asi dos
                 # revisiones simultaneas no pueden aprobar el mismo analisis.
                 cursor.execute(
-                    "SELECT resultado FROM ejecuciones WHERE id = %s FOR UPDATE",
+                    "SELECT ticket_id, resultado FROM ejecuciones WHERE id = %s FOR UPDATE",
                     (ejecucion_id,),
                 )
                 fila = cursor.fetchone()
@@ -235,6 +258,8 @@ class SupportOpsDB:
                     texto_final = texto_final.strip()
                     if not texto_final:
                         raise ValueError("Editar requiere texto final")
+                    if pide_credenciales({"texto": texto_final}):
+                        raise ValueError("La respuesta editada solicita credenciales")
                 else:
                     texto_final = ""
 
@@ -247,7 +272,12 @@ class SupportOpsDB:
                     """,
                     (ejecucion_id, decision, texto_final, motivo),
                 )
-                return cursor.fetchone()
+                revision = cursor.fetchone()
+                self._registrar_estado_ticket(
+                    cursor, fila["ticket_id"], decision != "rechazar",
+                    "revision_" + decision,
+                )
+                return revision
 
     def obtener_kpis(self):
         with self.conectar() as conexion:
@@ -452,7 +482,7 @@ class SupportOpsDB:
         with self.conectar() as conexion, conexion.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT r.id, e.resultado
+                SELECT r.id, e.ticket_id, e.resultado
                 FROM revisiones AS r
                 JOIN ejecuciones AS e ON e.id = r.ejecucion_id
                 WHERE r.ejecucion_id = %s FOR UPDATE OF r
@@ -481,4 +511,9 @@ class SupportOpsDB:
                 """,
                 (original["id"], decision, texto_final, motivo.strip(), operador.strip()),
             )
-            return cursor.fetchone()
+            correccion = cursor.fetchone()
+            self._registrar_estado_ticket(
+                cursor, original["ticket_id"], decision == "editar",
+                "correccion_" + decision,
+            )
+            return correccion

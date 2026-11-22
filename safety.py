@@ -78,7 +78,9 @@ def motivo_consulta_restringida(texto: str) -> str | None:
     if re.search(
         r"\b(?:ignora\w*|olvida\w*|desobedece\w*)\b.{0,70}"
         r"\b(?:instrucciones|reglas|sistema|prompt)\b|"
-        r"\b(?:actua|responde)\s+como\s+(?:el\s+)?(?:sistema|administrador)\b",
+        r"\b(?:actua|responde)\s+como\s+(?:el\s+)?(?:sistema|administrador)\b|"
+        r"\b(?:system|developer|assistant)\s*:|<\|(?:system|developer|assistant)\|>|"
+        r"\[inst\]",
         normal,
     ):
         return "Instrucciones no confiables en la consulta"
