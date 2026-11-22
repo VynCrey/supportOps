@@ -111,9 +111,9 @@ else:
             format_func=lambda p: "Sin pedido" if p is None else f"#{p['id']} · {p['producto']}",
         )
         producto = st.selectbox(
-            "Producto relacionado (opcional)", [None, *productos],
+            "Producto relacionado (si no elegiste un pedido)", [None, *productos],
             format_func=lambda p: "Sin producto" if p is None else p["nombre"],
-            disabled=pedido is not None,
+            help="Si elegiste un pedido, se usará el producto de ese pedido.",
         )
         texto = st.text_area(
             "Consulta o reclamo", placeholder="Por ejemplo: el auricular dejó de encender...",
@@ -153,6 +153,7 @@ else:
     for reclamo in reclamos:
         with st.container(border=True):
             st.write(f"**Reclamo #{reclamo['id']} · ticket #{reclamo['ticket_id']}**")
+            st.caption(f"Estado del ticket: {reclamo['estado']}")
             if reclamo.get("producto"):
                 st.caption(f"Producto: {reclamo['producto']}")
             st.write(reclamo["texto"])

@@ -6,6 +6,8 @@ Esta copia funciona **sin la computadora original encendida**. Streamlit es la p
 
 Copiá `SupportOps_netbook.zip` a la netbook y **extraé todo el ZIP** en una carpeta, por ejemplo `C:\SupportOps`. Ejecutá los archivos `.cmd` dentro de esa carpeta extraída, nunca desde la vista previa del ZIP. El paquete contiene el código, el esquema y la base de conocimiento ficticia.
 
+La versión actual del ZIP se genera en la carpeta `proyectoFinal` con `python crear_paquete_netbook.py`. Si ya tenés una copia anterior en la netbook, reemplazá la carpeta extraída por esta versión antes de repetir `01_PREPARAR_NETBOOK.cmd`.
+
 El ZIP no contiene la base PostgreSQL de la otra computadora, contraseñas, el entorno `.venv` ni el modelo de Ollama. Esos componentes se crean o instalan **una vez en la netbook**. La copia arranca con 3 clientes, 6 tickets, 8 productos y 56 documentos ficticios; no trae las ejecuciones y revisiones hechas en la computadora original. No hace falta cargar 20.000 tickets para mostrar el programa.
 
 ## 1. Instalar los tres programas necesarios
@@ -43,8 +45,11 @@ Esperá el mensaje **«Preparacion terminada»**. Si falla, leé el error de la 
 3. En la pantalla de soporte, abrí **Reclamos**, seleccioná el ticket y tocá **Analizar ticket**. Revisá la propuesta, sus citas y la evidencia. Si el resultado no corresponde, elegí **editar** y escribí una respuesta correcta, o **rechazar** si no puede responderse.
 4. Tras guardar la revisión, actualizá **Mis reclamos** en la pantalla del cliente. Solo se muestra la respuesta revisada. Si soporte detecta luego un error, puede registrar una **corrección posterior** con motivo; el cliente ve la nueva versión y el historial conserva la anterior.
 
+Un ticket pasa a **resuelto** al aprobar o editar una respuesta. Si se rechaza o se retira una respuesta por error, vuelve a **abierto**; la corrección posterior queda registrada como evento.
+
 Las consultas que piden una extracción masiva de datos internos o contienen órdenes para cambiar las instrucciones del agente se separan del modelo y pasan a revisión humana. El programa corre solo en `127.0.0.1`; la selección de clientes es una simulación, no una autenticación para Internet.
-3. Para terminar, presioná **Ctrl+C** en cada una de las dos ventanas.
+
+Para terminar, presioná **Ctrl+C** en cada una de las tres ventanas: cliente, soporte y API.
 
 La primera llamada al modelo puede tardar. Si el panel dice que la API no está disponible, comprobá que la ventana de `02_INICIAR_API.cmd` siga abierta y que `/health` responda.
 
@@ -70,6 +75,6 @@ Cada pregunta crea un ticket y se analiza **por separado**: el modelo no recuerd
 - **No se conecta a PostgreSQL:** comprobá que el servidor esté iniciado, que use el puerto 5432 y que la contraseña del usuario `postgres` sea la de esta netbook.
 - **Error 503 al analizar:** abrí Ollama y comprobá `ollama list`; debe aparecer `qwen2.5:3b`. Si falta, ejecutá `ollama pull qwen2.5:3b`.
 - **El panel no conecta:** iniciá la API primero y comprobá `/health`.
-- **El análisis es lento:** el modelo local puede usar el procesador. Mantené las dos ventanas abiertas y esperá el resultado; no vuelvas a tocar «Analizar ticket» mientras procesa.
+- **El análisis es lento:** el modelo local puede usar el procesador. Mantené abiertas la API y las pantallas que estés usando; esperá el resultado sin volver a tocar «Analizar ticket».
 
-Para detalles técnicos, pruebas y limitaciones, consultá el [README](README.md) y el [informe de entrega](docs/informe_entrega.md).
+Para detalles técnicos, pruebas y limitaciones, consultá el [README](README.md) y el [informe técnico final](docs/entrega_final/SupportOps_Informe_Tecnico_2026.pdf).

@@ -21,6 +21,16 @@ def extraer_pdf(contenido: bytes) -> str:
             raise ValueError("No se aceptan PDF cifrados")
         if not 1 <= len(lector.pages) <= MAX_PAGES:
             raise ValueError("El PDF debe tener entre 1 y 5 páginas")
+        raiz = lector.trailer["/Root"]
+        if any(clave in raiz for clave in ("/OpenAction", "/AA", "/AcroForm")):
+            raise ValueError("El PDF contiene elementos activos no admitidos")
+        nombres = raiz.get("/Names")
+        if nombres and hasattr(nombres, "get_object"):
+            nombres = nombres.get_object()
+        if nombres and any(clave in nombres for clave in ("/JavaScript", "/EmbeddedFiles")):
+            raise ValueError("El PDF contiene elementos activos no admitidos")
+        if any("/Annots" in pagina or "/AA" in pagina for pagina in lector.pages):
+            raise ValueError("El PDF contiene enlaces o acciones no admitidas")
         texto = "\n".join(pagina.extract_text() or "" for pagina in lector.pages)
     except ValueError:
         raise

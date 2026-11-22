@@ -409,13 +409,19 @@ def reclamos_soporte():
     if not reclamos:
         st.info("No hay reclamos nuevos.")
         return
+    filtro = st.segmented_control("Mostrar", ["Todos", "Pendientes"], default="Todos")
+    if filtro == "Pendientes":
+        reclamos = [r for r in reclamos if r["estado"] == "abierto"]
+    if not reclamos:
+        st.info("No hay reclamos pendientes.")
+        return
     for reclamo in reclamos:
         with st.container(border=True):
             st.write(
                 f"**Ticket #{reclamo['ticket_id']} · {reclamo['cliente']}**"
             )
             st.caption(
-                f"Reclamo #{reclamo['id']} · "
+                f"Reclamo #{reclamo['id']} · {reclamo['estado']} · "
                 f"{reclamo.get('producto') or 'Consulta general'}"
                 + (f" · Pedido #{reclamo['pedido_id']}" if reclamo.get("pedido_id") else "")
             )

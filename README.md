@@ -6,8 +6,8 @@ y usa otra base de datos; no forma parte de este repositorio.
 
 El [informe técnico final en PDF](docs/entrega_final/SupportOps_Informe_Tecnico_2026.pdf)
 presenta la consigna institucional, el diseño técnico, las pruebas y sus límites,
-las fuentes y las instrucciones de reproducción. La imagen de portada, el logo
-institucional y el generador del PDF están en `docs/entrega_final/`.
+las fuentes y las instrucciones de reproducción. La imagen de portada y el
+generador del PDF están en `docs/entrega_final/`.
 
 Para copiar el programa a otra computadora Windows y usarlo de forma local,
 seguí [LEEME_NETBOOK.md](LEEME_NETBOOK.md). Incluye instalación inicial,
@@ -15,6 +15,8 @@ arranque de la API y las dos pantallas, y una demostración ficticia. La secció
 **Simulación** del panel permite hacer varias consultas libres: cada una crea
 un ticket, la IA propone una respuesta y el operador la revisa. El modelo
 analiza cada consulta por separado y ninguna respuesta se envía a terceros.
+`crear_paquete_netbook.py` genera el ZIP en la carpeta `proyectoFinal` usando
+solo archivos versionados y sin incluir contraseñas ni entornos locales.
 
 ## Sistema local de demostración
 

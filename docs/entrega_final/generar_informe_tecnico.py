@@ -46,7 +46,7 @@ ST = {
                          leading=15, textColor=TEAL, spaceBefore=12,
                          spaceAfter=6, keepWithNext=True),
     "body": ParagraphStyle("body", fontName="Arial", fontSize=9.2,
-                           leading=13.7, textColor=INK, spaceAfter=7),
+                           leading=13.4, textColor=INK, spaceAfter=6),
     "small": ParagraphStyle("small", fontName="Arial", fontSize=8,
                             leading=11.2, textColor=GRAY, spaceAfter=5),
     "bullet": ParagraphStyle("bullet", fontName="Arial", fontSize=9.2,
@@ -266,19 +266,19 @@ table(["Acción", "Efecto"], [
     ["Rechazar", "No publica respuesta. Es la única opción para un análisis bloqueado."],
     ["Corregir después", "Agrega una nueva versión con operador y motivo; conserva la revisión anterior."],
 ], [46 * mm, 126 * mm])
-p("La revisión inicial es única por ejecución. Una segunda llamada devuelve HTTP 409. La corrección posterior constituye otro registro; no modifica ni borra el original. Este diseño permite rectificar una equivocación del operador y reconstruir el historial.")
+p("La revisión inicial es única por ejecución. Una segunda llamada devuelve HTTP 409. La corrección posterior constituye otro registro; no modifica ni borra el original. Al aprobar o editar, el ticket queda resuelto; al rechazar o retirar una respuesta, vuelve a abierto. Cada cambio genera un evento. Este diseño permite rectificar una equivocación y reconstruir el historial.")
 
 h1("7. Agente y base de conocimiento")
 p("El análisis se divide en cuatro roles. <b>Triage</b> clasifica y señala datos faltantes. <b>Conocimiento</b> elige una búsqueda léxica, por categoría o híbrida. <b>Borrador</b> propone un texto y cita únicamente IDs de la evidencia entregada. <b>Supervisor</b> revisa respaldo y seguridad. Un control de código aplica reglas adicionales antes de permitir que el operador publique una respuesta.")
 h2("7.1 Documentos y citas")
-p("La base documental inicial contiene 56 piezas con identificadores KB-###. Para reclamos asociados a un producto, el análisis añade como evidencia una ficha CAT-PR-### con datos actuales de ese producto y del pedido simulado correspondiente. No expone la lista de clientes ni pedidos ajenos al modelo. El borrador solo puede citar IDs presentes en la evidencia de esa ejecución; una cita inventada bloquea la salida.")
+p("La base documental inicial contiene 56 piezas con identificadores KB-###. Para reclamos asociados a un producto, el análisis añade una ficha CAT-PR-### con datos actuales de ese producto y del pedido simulado. Si el reclamo no señala un producto, agrega CAT-CATALOGO con los ocho productos públicos. No expone la lista de clientes ni pedidos ajenos al modelo. El borrador solo puede citar IDs presentes en la evidencia de esa ejecución; una cita inventada bloquea la salida.")
 h2("7.2 Límites de la generación")
-p("El agente produce propuestas, no garantías de exactitud. Puede confundir categorías, elegir documentos poco pertinentes o redactar algo incompleto. La clasificación “listo” del supervisor no envía por sí sola una respuesta; sigue siendo necesaria la revisión de soporte. Las preguntas independientes de la pantalla de simulación no comparten una memoria de conversación persistente.")
+p("El agente produce propuestas, no garantías de exactitud. Puede confundir categorías, elegir documentos poco pertinentes o redactar algo incompleto. Para consultas simples de precio o disponibilidad, una regla reemplaza el borrador con valores de la ficha pública del catálogo; la propuesta igualmente requiere revisión humana. La clasificación “listo” del supervisor no envía por sí sola una respuesta. Las preguntas independientes de la pantalla de simulación no comparten una memoria de conversación persistente.")
 
 h1("8. Seguridad y límites de datos")
 p("Los controles se aplican en varias capas: validación de entradas, búsqueda limitada, esquema de citas, detector de solicitudes de secretos y decisión humana obligatoria. El programa no dispone de una herramienta para volcar tablas completas por una petición al agente. Las consultas explícitas para obtener toda la base de datos o todos los clientes, y las órdenes para ignorar instrucciones, se apartan del modelo; se conserva una propuesta de negativa para revisión humana.")
 h2("8.1 PDF como dato no confiable")
-p("La pantalla del cliente acepta PDF de texto de hasta <b>2 MB y 5 páginas</b>. Extrae como máximo 2.500 caracteres, no conserva el archivo y no ejecuta contenido. El texto se etiqueta como adjunto no confiable. Un archivo cifrado, vacío o ilegible se rechaza. Las instrucciones que intenten cambiar el comportamiento del agente se tratan como parte del reclamo y pasan a revisión, no como órdenes del sistema.")
+p("La pantalla del cliente acepta PDF de texto de hasta <b>2 MB y 5 páginas</b>. Extrae como máximo 2.500 caracteres, no conserva el archivo y no ejecuta contenido. Rechaza archivos cifrados, ilegibles o con formularios, enlaces, adjuntos o acciones activas. El texto se etiqueta como adjunto no confiable. Las instrucciones que intenten cambiar el comportamiento del agente se tratan como parte del reclamo y pasan a revisión, no como órdenes del sistema.")
 h2("8.2 Protección operativa")
 bullet("No solicitar contraseñas, tokens ni códigos de verificación; los pedidos directos se detectan en texto, preguntas y faltantes.")
 bullet("No afirmar pagos, envíos, desbloqueos o reembolsos no verificados por la base de datos.")
@@ -294,7 +294,7 @@ table(["Recurso o riesgo", "Tratamiento en el proyecto"], [
 ], [50 * mm, 122 * mm])
 
 h1("9. Pruebas y resultados")
-p("La revisión automatizada del <b>22/11/2026</b> ejecutó <b>58 pruebas: 58 correctas</b>. Incluye los contratos existentes de análisis y recuperación, más casos de la tienda ficticia, evidencia de producto, bloqueo de una petición de base interna, tratamiento de PDF inválido y respuesta visible únicamente tras revisión. Ambas pantallas abrieron en una prueba de interfaz con respuestas simuladas. También se extrajo texto de un PDF de prueba. Estas pruebas verifican comportamientos definidos, no el acierto del modelo en todas las preguntas posibles.")
+p("La revisión automatizada del <b>22/11/2026</b> ejecutó <b>59 pruebas: 59 correctas</b>. Incluye los contratos existentes de análisis y recuperación, más casos de la tienda ficticia, evidencia de producto o catálogo, bloqueo de una petición de base interna, rechazo de PDF activo y respuesta visible únicamente tras revisión. Una prueba de integración con PostgreSQL temporal recorrió esquema, KB, pedido, reclamo, análisis, revisión y rectificación. Ambas pantallas abrieron en una prueba de interfaz con respuestas simuladas. Estas verificaciones no prueban el acierto del modelo en todas las preguntas posibles.")
 h2("9.1 Evaluación histórica H5")
 p("La corrida H5 del <b>27/10/2026</b> evaluó 20 tickets reservados sobre una versión anterior. Acertó la categoría en 14/20, obtuvo evidencia aceptable o abstención correcta en 9/20, y una decisión automática dentro del rango esperado en 17/20. Los tres criterios se cumplieron juntos en <b>7/20</b>. Algunos borradores de esos siete también requerían corrección humana. T01 y T02 se rechazaron; T03 se aprobó; T20 se editó. Los registros permanecen en docs/eval/h5_v2.md y su CSV.")
 h2("9.2 Recuperación documental")

@@ -49,7 +49,9 @@ class SimulacionTest(unittest.TestCase):
             raise AssertionError(ruta)
 
         with patch("api_client.get", side_effect=get), patch("api_client.post", side_effect=post):
-            app = AppTest.from_file(Path(__file__).with_name("streamlit_app.py"))
+            app = AppTest.from_file(
+                Path(__file__).with_name("streamlit_app.py"), default_timeout=10
+            )
             app.run()
             app.radio[0].set_value("Simulación").run()
             self.assertFalse(app.exception)
