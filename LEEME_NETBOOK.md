@@ -37,6 +37,7 @@ Esperá el mensaje **«Preparacion terminada»**. Si falla, leé el error de la 
 1. Hacé doble clic en **`02_INICIAR_API.cmd`**. Ingresá la contraseña de PostgreSQL y dejá abierta esa ventana. Verificá en el navegador: <http://127.0.0.1:8000/health>. Debe aparecer `"estado": "ok"` y `"base": "conectada"`.
 2. Hacé doble clic en **`03_ABRIR_PANEL.cmd`** y dejá abierta esa segunda ventana. Si Streamlit pide un correo la primera vez, podés presionar Enter. Abrí <http://127.0.0.1:8501>.
 3. Hacé doble clic en **`04_ABRIR_CLIENTE.cmd`**. Abrí <http://127.0.0.1:8502> para la pantalla del cliente ficticio. Las tres ventanas deben quedar abiertas durante la demostración.
+4. Hacé doble clic en **`05_COMPROBAR_DEMO.cmd`**. Debe mostrar `OK` para API, catálogo, Ollama y las dos pantallas. Si indica `FALTA`, seguí la instrucción que aparece en esa ventana y repetí la comprobación.
 
 ## Demostración de las dos pantallas
 
@@ -44,6 +45,8 @@ Esperá el mensaje **«Preparacion terminada»**. Si falla, leé el error de la 
 2. En **Mis reclamos**, seleccioná el pedido o producto, escribí una consulta y, si querés, adjuntá un PDF de texto de hasta 2 MB y 5 páginas. El archivo no se conserva; solo se agrega el texto extraído al ticket como material no confiable.
 3. En la pantalla de soporte, abrí **Reclamos**, seleccioná el ticket y tocá **Analizar ticket**. Revisá la propuesta, sus citas y la evidencia. Si el resultado no corresponde, elegí **editar** y escribí una respuesta correcta, o **rechazar** si no puede responderse.
 4. Tras guardar la revisión, actualizá **Mis reclamos** en la pantalla del cliente. Solo se muestra la respuesta revisada. Si soporte detecta luego un error, puede registrar una **corrección posterior** con motivo; el cliente ve la nueva versión y el historial conserva la anterior.
+
+Los avisos de compra y reclamo quedan visibles tras actualizar la pantalla. En **Mis reclamos**, el botón **Actualizar respuestas** vuelve a consultar el estado guardado en PostgreSQL. En soporte, **Actualizar bandeja** muestra los reclamos nuevos y el filtro **Pendientes** ayuda a empezar por los abiertos.
 
 Un ticket pasa a **resuelto** al aprobar o editar una respuesta. Si se rechaza o se retira una respuesta por error, vuelve a **abierto**; la corrección posterior queda registrada como evento.
 

@@ -294,7 +294,7 @@ table(["Recurso o riesgo", "Tratamiento en el proyecto"], [
 ], [50 * mm, 122 * mm])
 
 h1("9. Pruebas y resultados")
-p("La revisión automatizada del <b>22/11/2026</b> ejecutó <b>59 pruebas: 59 correctas</b>. Incluye los contratos existentes de análisis y recuperación, más casos de la tienda ficticia, evidencia de producto o catálogo, bloqueo de una petición de base interna, rechazo de PDF activo y respuesta visible únicamente tras revisión. Una prueba de integración con PostgreSQL temporal recorrió esquema, KB, pedido, reclamo, análisis, revisión y rectificación. Ambas pantallas abrieron en una prueba de interfaz con respuestas simuladas. Estas verificaciones no prueban el acierto del modelo en todas las preguntas posibles.")
+p("La revisión automatizada del <b>25/11/2026</b> ejecutó <b>60 pruebas: 60 correctas</b>. Incluye análisis y recuperación, catálogo ficticio, rechazo de solicitudes de datos internos, PDF activo, compra simulada y respuesta visible únicamente tras revisión. Una integración previa con PostgreSQL temporal recorrió esquema, KB, pedido, reclamo, análisis, revisión y rectificación. Las dos pantallas se ejercitaron con respuestas simuladas. Estas verificaciones no prueban el acierto del modelo en todas las preguntas posibles.")
 h2("9.1 Evaluación histórica H5")
 p("La corrida H5 del <b>27/10/2026</b> evaluó 20 tickets reservados sobre una versión anterior. Acertó la categoría en 14/20, obtuvo evidencia aceptable o abstención correcta en 9/20, y una decisión automática dentro del rango esperado en 17/20. Los tres criterios se cumplieron juntos en <b>7/20</b>. Algunos borradores de esos siete también requerían corrección humana. T01 y T02 se rechazaron; T03 se aprobó; T20 se editó. Los registros permanecen en docs/eval/h5_v2.md y su CSV.")
 h2("9.2 Recuperación documental")
@@ -314,6 +314,7 @@ table(["Orden", "Archivo", "Qué hace"], [
     ["2", "02_INICIAR_API.cmd", "Inicia FastAPI en 127.0.0.1:8000."],
     ["3", "03_ABRIR_PANEL.cmd", "Abre soporte en 127.0.0.1:8501."],
     ["4", "04_ABRIR_CLIENTE.cmd", "Abre la tienda ficticia en 127.0.0.1:8502."],
+    ["5", "05_COMPROBAR_DEMO.cmd", "Comprueba API, catálogo, Ollama y ambas pantallas."],
 ], [20 * mm, 63 * mm, 89 * mm])
 p("El paquete de archivos no contiene la base original, contraseñas ni pesos del modelo. La preparación reconstruye una base local de demostración. Los 20.000 tickets generados para análisis histórico no se trasladan automáticamente. El procedimiento completo está en LEEME_NETBOOK.md.")
 
@@ -337,8 +338,8 @@ table(["Referencia", "Contenido"], [
     ["Repositorio", "<link href='https://github.com/VynCrey/supportOps' color='#006F73'>https://github.com/VynCrey/supportOps</link>"],
     ["Código", "main.py, db.py, analysis.py, safety.py, cliente_app.py, streamlit_app.py, pdf_guard.py."],
     ["Datos", "schema.sql, catalogo_demo.json, kb.json, generar_datos.py."],
-    ["Pruebas", "test_analysis.py, test_marco.py, test_tienda.py y docs/eval/."],
-    ["Instalación", "LEEME_NETBOOK.md y scripts numerados 01 a 04."],
+    ["Pruebas", "test_analysis.py, test_marco.py, test_tienda.py, test_cliente_app.py y docs/eval/."],
+    ["Instalación", "LEEME_NETBOOK.md y scripts numerados 01 a 05."],
 ], [37 * mm, 135 * mm])
 p("La imagen de portada es una ilustración conceptual generada con IA y no una captura del sistema. Se conserva en docs/entrega_final/portada_ia.png. El informe usa los nombres de los autores y el año indicados para la presentación.", "small")
 h2("12.3 Balance y mejoras posteriores")

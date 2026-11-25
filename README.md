@@ -17,6 +17,8 @@ un ticket, la IA propone una respuesta y el operador la revisa. El modelo
 analiza cada consulta por separado y ninguna respuesta se envía a terceros.
 `crear_paquete_netbook.py` genera el ZIP en la carpeta `proyectoFinal` usando
 solo archivos versionados y sin incluir contraseñas ni entornos locales.
+Después de abrir API y ambas pantallas, `05_COMPROBAR_DEMO.cmd` verifica
+catálogo, modelo local y las direcciones de las dos interfaces.
 
 ## Sistema local de demostración
 
@@ -178,16 +180,19 @@ En la máquina de Cristian, el intérprete está en
 `.\.venv\Scripts\python.exe` por esa ruta en los comandos anteriores.
 
 La evaluación H5 de 20 tickets está en [docs/eval/h5_v2.md](docs/eval/h5_v2.md).
-El [informe de entrega](docs/informe_entrega.md) resume el funcionamiento, las
-pruebas y las limitaciones. H5 quedó documentada con 7/20 casos que cumplen sus
-tres criterios; esto no certifica que los borradores sean seguros para clientes.
+El [informe técnico final](docs/entrega_final/SupportOps_Informe_Tecnico_2026.pdf)
+resume el funcionamiento, las pruebas y los límites de esta entrega. H5 quedó
+documentada con 7/20 casos que cumplen sus tres criterios en una versión
+anterior; esto no certifica que los borradores sean seguros para clientes.
 Para recuperar los resultados de ejecuciones ya guardadas, o continuar solo los
 casos pendientes sin crear tickets duplicados, ejecutá `evaluar_h5_local.py`
 con la API local abierta. El script registra resultados automáticos; las
 revisiones humanas se guardan desde el panel.
 
-El volumen final de datos requiere ejecutar el generador en cada instalacion; no
-se incluye un volcado de la base en Git. La evaluación H5 corresponde a una
+Los 20.000 tickets del análisis histórico requieren ejecutar el generador en
+cada instalación si se desea repetir ese volumen; la demostración en la netbook
+funciona con la muestra pequeña. No se incluye un volcado de la base en Git.
+La evaluación H5 corresponde a una
 versión anterior a los últimos ajustes del filtro de secretos; hay que repetirla
 con el modelo real para medir esos cambios. El sistema sigue siendo un prototipo
 local con revisión humana obligatoria.
@@ -195,5 +200,5 @@ local con revisión humana obligatoria.
 ## Documentación de integración
 
 El [contrato inicial](docs/contratos.md) y la [entrega inicial a Marco](docs/entrega_marco.md)
-conservan el acuerdo de trabajo de esa etapa. La integración y el estado actual
-están resumidos en el [informe de entrega](docs/informe_entrega.md).
+conservan el acuerdo de trabajo de esa etapa. El estado actual está resumido en
+el [informe técnico final](docs/entrega_final/SupportOps_Informe_Tecnico_2026.pdf).

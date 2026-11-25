@@ -7,3 +7,6 @@ textColor = "#20343A"
 borderColor = "#CEDDDE"
 font = "sans-serif"
 baseRadius = "8px"
+
+[server]
+maxUploadSize = 2

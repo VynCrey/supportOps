@@ -69,9 +69,12 @@ def motivo_consulta_restringida(texto: str) -> str | None:
     if re.search(
         r"\b(?:dame|mostra\w*|muestra\w*|envia\w*|pasame|exporta\w*|"
         r"descarga\w*|entrega\w*)\b.{0,80}"
-        r"\b(?:toda\s+(?:tu|la)\s+base\s+de\s+datos|"
+        r"\b(?:(?:toda\s+)?(?:tu|la)\s+base\s+de\s+datos|"
         r"todos\s+los\s+(?:clientes|tickets|pedidos)|"
-        r"tabla\s+(?:completa|de\s+clientes)|contrase[nñ]as?\s+de\s+clientes)\b",
+        r"tabla\s+(?:completa|de\s+clientes)|"
+        r"(?:los\s+)?datos\s+(?:de|del)\s+(?:otro\s+)?(?:cliente|usuario)|"
+        r"(?:contrase[nñ]as?|claves?|tokens?)\s+(?:de|del)\s+"
+        r"(?:(?:un|una|el|la)\s+)?(?:cliente|usuario))\b",
         normal,
     ):
         return "Solicitud de datos internos o masivos"
