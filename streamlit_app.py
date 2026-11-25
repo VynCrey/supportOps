@@ -14,6 +14,7 @@ def mostrar_error(error: APIError):
 
 def resumen():
     st.header("Resumen")
+    st.caption("Recorrido de la demostración: cliente crea una consulta, la IA propone y soporte decide qué respuesta mostrar.")
     try:
         kpis = get("/kpis")
         ultimos = get("/tickets", limit=10)
@@ -400,7 +401,8 @@ def productos_soporte():
 
 def reclamos_soporte():
     st.header("Bandeja de reclamos")
-    st.caption("Consultas enviadas desde la pantalla del cliente ficticio.")
+    st.caption("Abrí un caso pendiente para analizarlo. Después revisá la propuesta y guardá tu decisión.")
+    st.button("Actualizar bandeja", icon=":material/refresh:")
     try:
         reclamos = get("/reclamos")["reclamos"]
     except APIError as error:
@@ -409,7 +411,7 @@ def reclamos_soporte():
     if not reclamos:
         st.info("No hay reclamos nuevos.")
         return
-    filtro = st.segmented_control("Mostrar", ["Todos", "Pendientes"], default="Todos")
+    filtro = st.segmented_control("Mostrar", ["Pendientes", "Todos"], default="Pendientes")
     if filtro == "Pendientes":
         reclamos = [r for r in reclamos if r["estado"] == "abierto"]
     if not reclamos:
@@ -426,7 +428,7 @@ def reclamos_soporte():
                 + (f" · Pedido #{reclamo['pedido_id']}" if reclamo.get("pedido_id") else "")
             )
             st.write(reclamo["texto"])
-            if st.button("Abrir para analizar", key=f"abrir_{reclamo['ticket_id']}"):
+            if st.button("Abrir ticket", key=f"abrir_{reclamo['ticket_id']}"):
                 st.session_state.ticket_analizar_id = reclamo["ticket_id"]
                 st.session_state.ir_analisis = True
                 st.rerun()

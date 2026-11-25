@@ -1,4 +1,8 @@
-# Informe de entrega: SupportOps
+# Informe de entrega histórica: SupportOps
+
+Este documento conserva el estado del 28/10/2026. La versión local con dos
+pantallas, catálogo y correcciones posteriores está en el
+[informe técnico final](entrega_final/SupportOps_Informe_Tecnico_2026.pdf).
 
 **Fecha:** 28/10/2026
 

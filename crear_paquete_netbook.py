@@ -17,6 +17,7 @@ EXCLUIR = {
 REQUERIDOS = {
     "01_PREPARAR_NETBOOK.cmd", "02_INICIAR_API.cmd",
     "03_ABRIR_PANEL.cmd", "04_ABRIR_CLIENTE.cmd",
+    "05_COMPROBAR_DEMO.cmd", "verificar_netbook.py",
     "catalogo_demo.json", "kb.json", "requirements.txt", "schema.sql",
     "cliente_app.py", "streamlit_app.py", "pdf_guard.py",
     "docs/entrega_final/SupportOps_Informe_Tecnico_2026.pdf",

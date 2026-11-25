@@ -18,6 +18,9 @@ def dinero(valor):
 
 st.title("Tienda Faro")
 st.caption("Tienda ficticia · compras de demostración · soporte revisado por una persona")
+aviso = st.session_state.pop("cliente_aviso", None)
+if aviso:
+    st.success(aviso, icon=":material/check_circle:")
 
 try:
     get("/health")
@@ -42,7 +45,7 @@ with st.sidebar:
 
 if seccion == "Catálogo":
     st.header("Productos")
-    st.caption("Precios y disponibilidad ficticios. La compra se registra solo en esta computadora.")
+    st.caption("Elegí un producto para registrar una compra ficticia. No se procesan pagos ni entregas.")
     try:
         productos = get("/productos")["productos"]
     except APIError as error:
@@ -53,14 +56,13 @@ if seccion == "Catálogo":
                 (p["nombre"] + " " + p["categoria"]).casefold()]
     if not visibles:
         st.info("No hay productos para esa búsqueda.")
-    for producto in visibles:
-        with st.container(border=True):
-            izquierda, derecha = st.columns([3, 1], vertical_alignment="center")
-            with izquierda:
+    for inicio in range(0, len(visibles), 2):
+        columnas = st.columns(2)
+        for columna, producto in zip(columnas, visibles[inicio:inicio + 2]):
+            with columna.container(border=True):
                 st.subheader(producto["nombre"])
                 st.caption(f"{producto['categoria']} · Código {producto['id']}")
                 st.write(producto["descripcion"])
-            with derecha:
                 st.write(f"**{dinero(producto['precio'])}**")
                 st.caption(f"{producto['stock']} unidades ficticias")
                 if st.button(
@@ -75,7 +77,11 @@ if seccion == "Catálogo":
                     except APIError as error:
                         st.error(str(error))
                     else:
-                        st.success(f"Pedido simulado #{pedido['id']} registrado.")
+                        st.session_state.cliente_aviso = (
+                            f"Pedido simulado #{pedido['id']} registrado. "
+                            "Podés verlo en Mis pedidos."
+                        )
+                        st.rerun()
 
 elif seccion == "Mis pedidos":
     st.header("Mis pedidos")
@@ -96,7 +102,8 @@ elif seccion == "Mis pedidos":
 
 else:
     st.header("Mis reclamos y consultas")
-    st.caption("Describí el problema. El equipo de soporte revisará la propuesta de la IA antes de responder.")
+    st.caption("Contá qué necesitás. Soporte revisa la propuesta de la IA antes de mostrarte una respuesta.")
+    st.button("Actualizar respuestas", icon=":material/refresh:")
     try:
         pedidos = get("/pedidos", cliente_id=cliente["id"])["pedidos"]
         reclamos = get("/reclamos", cliente_id=cliente["id"])["reclamos"]
@@ -145,7 +152,10 @@ else:
             except (APIError, ValueError) as error:
                 st.error(str(error))
             else:
-                st.success(f"Reclamo #{nuevo['reclamo_id']} registrado. Ticket #{nuevo['ticket_id']}.")
+                st.session_state.cliente_aviso = (
+                    f"Reclamo #{nuevo['reclamo_id']} registrado como ticket "
+                    f"#{nuevo['ticket_id']}. Esperá la revisión de soporte."
+                )
                 st.rerun()
 
     if not reclamos:
