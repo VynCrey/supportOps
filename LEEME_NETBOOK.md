@@ -6,6 +6,8 @@ Esta copia funciona **sin la computadora original encendida**. Streamlit es la p
 
 Copiá `SupportOps_netbook.zip` a la netbook y **extraé todo el ZIP** en una carpeta, por ejemplo `C:\SupportOps`. Ejecutá los archivos `.cmd` dentro de esa carpeta extraída, nunca desde la vista previa del ZIP. El paquete contiene el código, el esquema y la base de conocimiento ficticia.
 
+Los dos informes para presentar están en `docs\entrega_final\` dentro del ZIP: `SupportOps_Informe_Tecnico_2026.pdf` y `SupportOps_Informe_Proyecto_Integrador_2026.pdf`.
+
 La versión actual del ZIP se genera en la carpeta `proyectoFinal` con `python crear_paquete_netbook.py`. Si ya tenés una copia anterior en la netbook, reemplazá la carpeta extraída por esta versión antes de repetir `01_PREPARAR_NETBOOK.cmd`.
 
 El ZIP no contiene la base PostgreSQL de la otra computadora, contraseñas, el entorno `.venv` ni el modelo de Ollama. Esos componentes se crean o instalan **una vez en la netbook**. La copia arranca con 3 clientes, 6 tickets, 8 productos y 56 documentos ficticios; no trae las ejecuciones y revisiones hechas en la computadora original. No hace falta cargar 20.000 tickets para mostrar el programa.

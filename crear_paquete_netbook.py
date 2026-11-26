@@ -10,7 +10,6 @@ from zipfile import ZIP_DEFLATED, ZipFile
 RAIZ = Path(__file__).resolve().parent
 SALIDA = RAIZ.parent / "SupportOps_netbook.zip"
 EXCLUIR = {
-    "docs/entrega_final/SupportOps_Informe_Proyecto_Integrador_2026.pdf",
     "docs/entrega_final/generar_informe.py",
     "docs/entrega_final/logo_instituto.png",
 }
@@ -21,6 +20,7 @@ REQUERIDOS = {
     "catalogo_demo.json", "kb.json", "requirements.txt", "schema.sql",
     "cliente_app.py", "streamlit_app.py", "pdf_guard.py",
     "docs/entrega_final/SupportOps_Informe_Tecnico_2026.pdf",
+    "docs/entrega_final/SupportOps_Informe_Proyecto_Integrador_2026.pdf",
 }
 
 
