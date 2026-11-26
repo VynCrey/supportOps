@@ -11,10 +11,11 @@ generador del PDF están en `docs/entrega_final/`.
 
 Para copiar el programa a otra computadora Windows y usarlo de forma local,
 seguí [LEEME_NETBOOK.md](LEEME_NETBOOK.md). Incluye instalación inicial,
-arranque de la API y las dos pantallas, y una demostración ficticia. La sección
-**Simulación** del panel permite hacer varias consultas libres: cada una crea
-un ticket, la IA propone una respuesta y el operador la revisa. El modelo
-analiza cada consulta por separado y ninguna respuesta se envía a terceros.
+arranque de la API y las dos pantallas, y una demostración ficticia. En
+**Conversaciones**, cliente y soporte intercambian mensajes que quedan en
+PostgreSQL. La IA puede preparar una propuesta sobre el último mensaje y el
+contexto reciente; el operador decide si publicarla. La sección **Simulación**
+se conserva como práctica rápida con tickets independientes.
 `crear_paquete_netbook.py` genera el ZIP en la carpeta `proyectoFinal` usando
 solo archivos versionados y sin incluir contraseñas ni entornos locales.
 Después de abrir API y ambas pantallas, `05_COMPROBAR_DEMO.cmd` verifica
@@ -22,25 +23,29 @@ catálogo, modelo local y las direcciones de las dos interfaces.
 
 ## Sistema local de demostración
 
-- `schema.sql` define once tablas: las siete originales y productos, pedidos,
-  reclamos y correcciones posteriores.
+- `schema.sql` define doce tablas: las siete originales y productos, pedidos,
+  reclamos, correcciones y mensajes de conversación.
 - `bootstrap.py` crea la base `supportops_final` y carga una muestra ficticia:
   3 clientes, 6 tickets y 18 eventos.
 - `documentos` y `relaciones` se llenan con `cargar_kb.py` a partir de `kb.json`
   (56 documentos y 92 relaciones). Ver [docs/kb_y_recuperacion.md](docs/kb_y_recuperacion.md).
 - `run.py` inicia la API local. Ya permite comprobar la conexion, listar tickets,
   consultar uno con sus eventos, crear tickets y ver cantidades por estado.
-- `db.py` guarda ejecuciones, revisiones humanas y correcciones con historial,
-  además del catálogo, las compras simuladas y los reclamos.
+- `db.py` guarda ejecuciones, revisiones humanas, correcciones y mensajes con
+  historial, además del catálogo, las compras simuladas y los reclamos.
 - `analysis.py` coordina cuatro roles, comprueba las salidas, aplica el gate y
   guarda la ejecucion. `llm.py` llama al modelo local de Ollama.
 - `knowledge_adapter.py` conecta con `retrieval.py` de Marco (lexical, grafo e
   hibrido sobre PostgreSQL). Si el archivo faltara, la evidencia es vacia y el
   resultado lo indica claramente.
 - La API incluye analisis de tickets, consulta de ejecuciones y revision humana.
-- `streamlit_app.py` ofrece la pantalla de soporte para analizar, revisar y
-  rectificar. `cliente_app.py` muestra el catálogo ficticio, permite registrar
-  pedidos y reclamos y enseña únicamente respuestas revisadas.
+- `streamlit_app.py` ofrece la pantalla de soporte para leer conversaciones,
+  responder directamente, analizar con IA, revisar y rectificar.
+  `cliente_app.py` muestra el catálogo ficticio, registra pedidos y permite
+  continuar la conversación. El cliente no ve borradores internos.
+- `run.py` aplica el esquema al arrancar; al actualizar una base existente,
+  incorpora la tabla de mensajes y conserva los primeros textos y respuestas
+  revisadas de reclamos previos sin duplicarlos.
 - Los reclamos pueden incluir texto extraído de un PDF pequeño. El archivo no
   se guarda ni ejecuta. Las instrucciones dentro de consultas y PDF son datos
   no confiables; los pedidos de datos internos masivos pasan a revisión sin
@@ -135,6 +140,17 @@ incluso al revisar una ejecucion creada antes de instalar esa regla.
 Si faltan, responde 503 y no crea una ejecucion. Con la base de conocimiento
 todavia vacia, la propuesta queda marcada para revision humana; no se presenta
 como respuesta respaldada por documentos.
+
+Las conversaciones usan `POST /reclamos` para abrir un caso,
+`GET /reclamos/{ticket_id}/mensajes` para leerlo y los endpoints
+`POST /reclamos/{ticket_id}/mensajes/cliente` y `/soporte` para continuar.
+Una revisión aprobada o editada publica la respuesta en ese chat; el rechazo
+no publica el borrador. Una corrección retira de la vista la versión anterior
+y deja la nueva, con motivo e historial. Si la conversación cambia después
+del análisis, la API exige analizarla de nuevo antes de aprobar o editar.
+La selección de cliente y los endpoints de soporte son parte de una demo
+local: no constituyen autenticación ni permisos para ofrecer el servicio en
+Internet o con datos reales.
 
 Para preparar el modelo en Windows, instala Ollama desde su
 [pagina oficial](https://ollama.com/download/windows). Abre una terminal nueva

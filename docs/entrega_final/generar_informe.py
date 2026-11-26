@@ -230,7 +230,7 @@ table(["ENTREGA", "DATOS"], [
 story.append(p("Prototipo académico con datos ficticios. Documento digital e imprimible.", "SmallCustom"))
 
 section("Guía de lectura y localización de la entrega", new_page=True)
-para("Este informe sigue los apartados de la plantilla <b>Proyecto Integrador Final</b> del ISFT Nº 197. Documenta lo implementado, las evidencias observadas y los límites de una simulación local. La versión del sistema considerada es <b>main al 28/10/2026</b>.")
+para("Este informe sigue los apartados de la plantilla <b>Proyecto Integrador Final</b> del ISFT Nº 197. Documenta lo implementado, las evidencias observadas y los límites de una simulación local. La versión del sistema considerada es la de <b>25/11/2026</b>.")
 table(["Elemento", "Dónde encontrarlo / cómo acceder"], [
     ["Código fuente y versión", "<link href='https://github.com/VynCrey/supportOps' color='#1673B8'>github.com/VynCrey/supportOps</link> · rama <b>main</b>. El historial Git conserva los cambios. El PDF acompaña esta entrega en <b>docs/entrega_final/</b>."],
     ["Instalación y uso", "<b>LEEME_NETBOOK.md</b> (guía de tres pasos en Windows), <b>README.md</b> (detalle técnico) y los iniciadores <b>01_PREPARAR_NETBOOK.cmd</b>, <b>02_INICIAR_API.cmd</b>, <b>03_ABRIR_PANEL.cmd</b>."],
@@ -242,20 +242,20 @@ table(["Momento", "Cambio y evidencia"], [
     ["Base local", "Modelo de tickets, eventos y API con PostgreSQL; panel para análisis y revisión."],
     ["Integración de conocimiento", "Marco incorporó KB y recuperación; se cargaron 56 documentos y 92 relaciones."],
     ["H5 (27/10/2026)", "20 tickets reservados evaluados con versión posterior al PR #5; se conservaron resultados y fallos."],
-    ["Versión de entrega", "Ajustes posteriores de seguridad y simulación de conversación; 54 pruebas unitarias correctas el 28/10/2026. H5 no se repitió con esta versión."],
+    ["Versión de entrega", "Chat persistente entre cliente y soporte, con propuestas revisadas; 63 pruebas automáticas correctas el 25/11/2026. H5 no se repitió con esta versión."],
 ], [110, CW - 110])
-para("El alcance comprobado es un sistema local para consultas ficticias y revisión humana. El panel no envía respuestas a clientes ni constituye un despliegue de producción.")
+para("El alcance comprobado es un sistema local para consultas ficticias y revisión humana. Las respuestas se muestran en el chat del cliente ficticio de esta computadora; no salen a un canal externo ni constituyen un despliegue de producción.")
 
 section("1. Presentación del proyecto", new_page=True)
 sub("Descripción general")
-para("SupportOps es un prototipo de mesa de ayuda para una organización ficticia con clientes y tickets. Un operador crea o recibe una consulta; la IA clasifica el problema, propone una búsqueda en la base de conocimiento, redacta una respuesta con citas y evalúa si necesita revisión. La persona responsable decide si aprueba, edita o rechaza. La interfaz de simulación permite repetir este ciclo con varias preguntas de un cliente ficticio.")
+para("SupportOps es un prototipo de mesa de ayuda para una tienda ficticia. Cliente y soporte conversan en dos pantallas conectadas por una API local. La IA clasifica el último mensaje del cliente, busca documentos, redacta una propuesta con citas y evalúa si necesita revisión. El operador decide si responde directamente, aprueba, edita o rechaza la propuesta. El historial del chat queda en PostgreSQL.")
 sub("Problema y contexto")
 para("En un soporte con procedimientos dispersos, un operador puede tardar en localizar el documento adecuado o responder sin respaldo. El proyecto explora si una base de conocimiento y agentes especializados ayudan a preparar borradores verificables. <b>El caso es simulado:</b> no se estudió una empresa real, no se midió ahorro de tiempo real y la aplicación no atiende clientes externos.")
 sub("Antecedentes y continuidad")
 para("El trabajo comenzó como práctica progresiva de Python backend y PostgreSQL: tablas, consultas, relaciones, scripts, API y panel. Cristian desarrolló el flujo de API, agentes, reglas de seguridad y revisión; Marco integró la base de conocimiento, búsqueda y evaluación de recuperación. El proyecto evolucionó mediante PR y sesiones de prueba registradas. No se declara una continuidad con una propuesta anterior de Gestión de Proyectos porque esa relación no consta en el repositorio.")
 sub("Actores y necesidades")
 table(["Actor", "Necesidad", "Respuesta del prototipo"], [
-    ["Cliente ficticio", "Plantear un problema de soporte.", "Crear una consulta de prueba en el panel. Ningún mensaje se envía fuera de la computadora."],
+    ["Cliente ficticio", "Plantear y continuar un problema de soporte.", "Chat local persistente en su pantalla; ningún mensaje se envía fuera de la computadora."],
     ["Operador", "Ver evidencia, borrador y riesgos antes de contestar.", "Panel con documentos recuperados, salida del análisis y decisión humana registrada."],
     ["Equipo de proyecto", "Reproducir fallos y comparar versiones.", "Trazas, CSV de H5, pruebas automáticas y documentos de evaluación."],
 ], [86, 165, CW - 251])
@@ -266,7 +266,8 @@ table(["ID", "Requisito", "Estado / verificación"], [
     ["R3", "Mostrar fuentes y guardar traza.", "Implementado; documentos y ejecución persistidos."],
     ["R4", "Bloquear pedidos de secretos y exigir intervención humana.", "Implementado con reglas deterministas y pruebas; calidad del borrador no garantizada."],
     ["R5", "Aprobar, editar o rechazar una única vez.", "Implementado; H5 registra ejemplos de los tres tipos y caso 409."],
-    ["R6", "Reproducirlo en otra Windows.", "Preparación automatizada; guía incluida. Falta validar en la netbook destino."],
+    ["R6", "Reproducirlo en otra Windows.", "Preparación automatizada y guía para la netbook destino."],
+    ["R7", "Conversar y corregir respuestas.", "Chat persistente y rectificaciones con historial; pruebas de ambas pantallas."],
 ], [30, 242, CW - 272], small=True)
 
 section("2. Objetivos y alcance", new_page=True)
@@ -281,21 +282,21 @@ bullet("Medir recuperación y comportamiento de punta a punta con casos fijados 
 bullet("Preparar una instalación autónoma en otra computadora Windows, sin depender de la PC original.")
 sub("Qué incluye y qué queda fuera")
 table(["Incluido en esta entrega", "Fuera del alcance actual"], [
-    ["API FastAPI, panel Streamlit y modo Simulación; datos ficticios; modelo local Ollama; KB, búsquedas, trazas, revisión y scripts de instalación.", "Clientes reales, integración con correo/WhatsApp o CRM, respuesta automática, autenticación multiusuario, despliegue público, Docker o AWS."],
-    ["Pruebas de código y evaluaciones H5 y de recuperación con limitaciones explícitas.", "Promesa de calidad para producción, SLA de empresa real, conversación con memoria entre mensajes y seguridad de un servicio público."],
+    ["API FastAPI, dos pantallas Streamlit, chat persistente, datos ficticios, Ollama local, KB, trazas, revisión y scripts de instalación.", "Clientes reales, integración con correo/WhatsApp o CRM, respuesta automática, autenticación multiusuario, despliegue público, Docker o AWS."],
+    ["Pruebas de código y evaluaciones H5 y de recuperación con limitaciones explícitas.", "Promesa de calidad para producción, SLA de empresa real y seguridad de un servicio público."],
 ], [CW / 2, CW / 2])
 sub("Criterios de aceptación de la entrega")
 para("Se considera demostrable el alcance si una instalación local permite crear un ticket ficticio, ver la propuesta y los documentos consultados, guardar una revisión humana y consultar la traza; si los errores de servicio e insumos inválidos tienen respuesta controlada; y si se entregan código, instrucciones, datos de prueba y resultados medidos. <b>Que la IA produzca respuestas correctas para cualquier caso no es un criterio que el prototipo haya alcanzado.</b>")
-para("En la simulación, la respuesta final aparece después de la decisión del operador y permanece en esa computadora; no se transmite a un canal externo.")
+para("En el chat de clientes, una propuesta aparece solo tras aprobarla o editarla el operador. También puede responder directamente. Todo permanece en esa computadora y no se transmite a un canal externo.")
 
 section("3. Recursos, viabilidad y riesgos", new_page=True)
 sub("Recursos usados")
 table(["Recurso", "Uso y dependencia"], [
     ["Windows 64 bits + Python 3.11", "Ejecución de API, scripts, pruebas y panel. Biblioteca fijada en requirements.txt."],
-    ["PostgreSQL 18, puerto 5432", "Almacenamiento relacional local de siete tablas; contraseña ingresada en terminal."],
+    ["PostgreSQL 18, puerto 5432", "Almacenamiento relacional local de doce tablas; contraseña ingresada en terminal."],
     ["Ollama + qwen2.5:3b", "Inferencia local. Qwen2.5:3b es el modelo; Ollama es el programa que lo ejecuta. Descarga inicial aproximada de 1,9 GB."],
     ["FastAPI + Uvicorn", "Servicios HTTP locales, validación de solicitudes y documentación /docs."],
-    ["Streamlit", "Pantalla para tickets, indicadores, análisis, revisión y simulación."],
+    ["Streamlit", "Pantallas de cliente y soporte: catálogo, chat, análisis, revisión y simulación."],
     ["Git y repositorio GitHub", "Control de versiones y entrega del código; no son necesarios para usar el ZIP en la netbook."],
 ], [144, CW - 144])
 para("La solución es viable como demostración local con espacio libre suficiente y recursos para el modelo. En la netbook de destino se informaron 16 GB de RAM, CPU AMD Ryzen 5 5600H y aproximadamente 299 GB libres; esto orienta la preparación, pero el rendimiento del modelo aún debe comprobarse allí. No se estiman costos monetarios porque no se contrataron servicios pagos para el prototipo.")
@@ -317,18 +318,18 @@ story.append(p("Figura 1. Coordinación secuencial de los componentes. La person
 para("El panel envía la solicitud a la API. FastAPI consulta PostgreSQL y llama a <b>analysis.py</b>. Primero el agente de <b>triage</b> clasifica la consulta y extrae faltantes. El agente de <b>conocimiento</b> elige un modo de búsqueda; <b>knowledge_adapter.py</b> usa <b>retrieval.py</b> para recuperar documentos. El <b>borrador</b> redacta texto, preguntas y citas usando esa evidencia. El <b>supervisor</b> emite una decisión; después, un filtro determinista verifica seguridad y consistencia. La ejecución y su traza se guardan en PostgreSQL. Finalmente el operador revisa el resultado en Streamlit.")
 sub("Contratos y persistencia")
 table(["Componente", "Entrada → salida / función"], [
-    ["API y panel", "Ticket, ID o texto → consulta HTTP, vista y acción del operador. Endpoints de salud, tickets, KPI, análisis, ejecución y revisión."],
+    ["API y pantallas", "Ticket y mensajes → consulta HTTP, chat y acción del operador. Endpoints de salud, casos, análisis, ejecución y revisión."],
     ["Modelo local", "Prompts por rol → salidas estructuradas validadas con Pydantic. Un JSON inválido provoca error controlado 502."],
     ["Recuperación", "Consulta, categoría y herramienta → hasta tres documentos con ID, versión y texto. No inventa documentos si no hay evidencia."],
     ["Reglas de seguridad", "Borrador, faltantes y evidencia → revisión o bloqueo por secretos, citas inválidas o respuesta vacía."],
-    ["PostgreSQL", "Almacena clientes, tickets, eventos, documentos, relaciones, ejecuciones y revisiones; estas últimas son únicas por ejecución."],
+    ["PostgreSQL", "Almacena clientes, tickets, mensajes, documentos, ejecuciones, revisiones y rectificaciones; cada revisión inicial es única por ejecución."],
 ], [122, CW - 122])
 sub("Decisiones de coordinación")
 para("Se separaron cuatro tareas del modelo para que clasificación, recuperación, redacción y supervisión tengan entradas y salidas auditables. El filtro determinista se ejecuta además de la opinión del supervisor: la revisión del modelo por sí sola mostró errores en pruebas preliminares. Los IDs públicos de tickets se excluyeron de los prompts del modelo para evitar que los confundiera con IDs de la KB; las citas se validan contra documentos realmente recuperados.")
 
 section("4.1 Datos, fuentes y recuperación", new_page=True)
 sub("Modelo de datos")
-para("El esquema <b>schema.sql</b> contiene siete tablas: clientes, tickets, eventos, documentos, relaciones, ejecuciones y revisiones. Las claves foráneas enlazan tickets con clientes, eventos con tickets y revisiones con ejecuciones. Las salidas del análisis y las trazas se guardan para reconstruir qué propuso el sistema. Los identificadores de los documentos de conocimiento siguen la forma KB-###.")
+para("El esquema <b>schema.sql</b> contiene doce tablas para clientes, tickets, eventos, documentos, relaciones, ejecuciones, revisiones, productos, pedidos, reclamos, correcciones y mensajes. Las claves foráneas enlazan casos, decisiones y conversación. Las trazas permiten reconstruir qué propuso el sistema. Los documentos de conocimiento siguen la forma KB-###.")
 table(["Conjunto", "Origen y volumen", "Uso y límite"], [
     ["Muestra inicial", "bootstrap.py: 3 clientes, 6 tickets y 18 eventos ficticios.", "Permite abrir el panel después de instalar, sin datos empresariales."],
     ["Conjunto ampliado", "generar_datos.py: hasta 500 clientes, 20.000 tickets y 60.000 eventos.", "Sirve para volumen y EDA; frases repetitivas, sin validez externa."],
@@ -345,7 +346,7 @@ section("4.2 IA, revisión y decisiones de implementación", new_page=True)
 sub("Componente de inteligencia artificial")
 para("El modelo <b>qwen2.5:3b</b> se ejecuta localmente con Ollama. Recibe una consulta concreta y contexto limitado, produce categoría, estrategia de búsqueda, borrador con citas y una evaluación. Las respuestas tienen variación entre corridas. La validación estructural rechaza formatos inesperados; una cita inexistente se bloquea. Si no existe evidencia suficiente, el sistema conserva la incertidumbre y solicita revisión, en lugar de dar por correcta una respuesta automática.")
 sub("Revisión humana y seguridad")
-para("El operador observa el texto, la categoría y los documentos. Puede <b>aprobar</b> (usar el borrador), <b>editar</b> (registrar una respuesta corregida) o <b>rechazar</b>. Debe escribir un motivo; el texto de ejemplo ‘string’ se rechaza. Una ejecución bloqueada por solicitud de credenciales solo ofrece rechazo. No se admite una segunda revisión de la misma ejecución (HTTP 409). Guardar la revisión no envía mensajes por red a un cliente.")
+para("El operador observa el texto, la categoría y los documentos. Puede <b>aprobar</b>, <b>editar</b> o <b>rechazar</b> una propuesta; también puede responder directamente en el chat. La revisión exige un motivo real. Una ejecución bloqueada por solicitud de credenciales solo ofrece rechazo; una segunda revisión devuelve HTTP 409. El cliente ficticio ve la respuesta publicada en su pantalla local.")
 sub("Aportes y reutilización")
 table(["Elemento", "Procedencia y adaptación"], [
     ["Práctica inicial de backend", "Ejercicios de Cristian en carpeta hermana backend-python-postgresql; base para SQL, Python y API. No es un framework externo del informe."],
@@ -357,7 +358,7 @@ sub("Elecciones relevantes")
 bullet("PostgreSQL aporta relaciones, integridad y consultas necesarias para tickets y revisiones; la DB local no se incluye en Git.")
 bullet("Ollama evita depender de una API remota para la demostración, con el costo de instalar el modelo y exigir hardware local.")
 bullet("FastAPI separa servicio y presentación; Streamlit ofrece una interfaz rápida para un prototipo educativo.")
-bullet("La simulación permite varias consultas, pero cada mensaje es un ticket nuevo e independiente: no hay memoria conversacional del modelo.")
+bullet("El chat de reclamos conserva mensajes y usa el contexto reciente al analizar; la sección Simulación sigue creando tickets independientes para practicar.")
 
 section("5. Pruebas y resultados", new_page=True)
 sub("Plan y fuentes de verificación")
@@ -370,7 +371,7 @@ table(["Escenario esperado", "Resultado observado", "Evidencia / observación"],
     ["Falla de servicios / salida", "503 si modelo/KB no están disponibles; 502 ante salida inválida. También se observó 409 y 422.", "docs/pruebas.md y capturas; 502/503 verifican código y mensaje, no conteo de filas antes/después."],
 ], [141, 167, CW - 308], small=True)
 sub("Pruebas del código actual")
-para("El 28/10/2026 se ejecutó <b>python -m unittest discover -s . -p 'test_*.py' -q</b> con el entorno Python del proyecto: <b>54 pruebas correctas</b>. Comprueban contratos, seguridad, validación, KB, recuperación, API y simulación. Son pruebas rápidas con dobles en varios flujos: no sustituyen el uso real de PostgreSQL y Ollama. Las advertencias de contexto de Streamlit en la consola no hicieron fallar la suite.")
+para("El 25/11/2026 se ejecutó <b>python -m unittest discover -s . -p 'test_*.py' -q</b> con el entorno Python del proyecto: <b>63 pruebas correctas</b>. Cubren contratos, seguridad, KB, recuperación, API y las dos pantallas de chat. Además, una prueba aislada con PostgreSQL comprobó mensajes, revisión, propuesta desactualizada y rectificaciones. Ollama real no se reevaluó con estos cambios.")
 
 section("5.1 Indicadores cuantitativos", new_page=True)
 sub("Evaluación H5 de veinte tickets")

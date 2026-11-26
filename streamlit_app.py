@@ -5,7 +5,7 @@ import streamlit as st
 from api_client import APIError, API_URL, get, post
 
 
-st.set_page_config(page_title="SupportOps", page_icon=":material/support_agent:", layout="wide")
+st.set_page_config(page_title="SupportOps | Soporte", page_icon=":material/support_agent:", layout="centered")
 
 
 def mostrar_error(error: APIError):
@@ -105,8 +105,8 @@ def tickets():
 
 
 def analisis():
-    st.header("Análisis y revisión humana")
-    st.caption("Cada análisis consulta a Ollama y guarda una ejecución en PostgreSQL.")
+    st.header("Revisar una propuesta de IA")
+    st.caption("La IA prepara una respuesta al último mensaje. Solo tu aprobación o edición la muestra al cliente.")
     st.session_state.setdefault(
         "ticket_analizar_id", st.session_state.get("ticket_para_analizar", 1)
     )
@@ -122,6 +122,21 @@ def analisis():
     with st.container(border=True):
         st.write(f"**Ticket #{ticket_id} · {ticket['cliente']}**")
         st.write(ticket["texto"])
+
+    try:
+        conversacion = get(f"/reclamos/{ticket_id}/mensajes")["mensajes"]
+    except APIError:
+        conversacion = None  # Los tickets de práctica no tienen conversación.
+    if conversacion:
+        with st.expander("Ver conversación con el cliente", expanded=True):
+            for mensaje in conversacion:
+                with st.chat_message(
+                    "user" if mensaje["autor"] == "cliente" else "assistant",
+                    avatar=":material/person:" if mensaje["autor"] == "cliente"
+                    else ":material/support_agent:",
+                ):
+                    st.write(mensaje["texto"])
+        st.caption("El análisis tomará el último mensaje del cliente y el contexto reciente.")
 
     if st.button("Analizar ticket", type="primary", icon=":material/psychology:"):
         with st.spinner("Analizando con Ollama; puede tardar un momento..."):
@@ -240,7 +255,10 @@ def analisis():
                 {"decision": decision, "texto_final": texto_final, "motivo": motivo},
             )
             st.success(f"Revisión #{revision['id']} guardada: {revision['decision']}.")
-            st.caption("Se guardó la decisión. No se envió ningún mensaje al cliente.")
+            st.caption(
+                "Si es una conversación, aprobar o editar muestra la respuesta en el chat del cliente. "
+                "Rechazar no envía el borrador."
+            )
             st.rerun()
         except APIError as error:
             mostrar_error(error)
@@ -400,9 +418,9 @@ def productos_soporte():
 
 
 def reclamos_soporte():
-    st.header("Bandeja de reclamos")
-    st.caption("Abrí un caso pendiente para analizarlo. Después revisá la propuesta y guardá tu decisión.")
-    st.button("Actualizar bandeja", icon=":material/refresh:")
+    st.header("Conversaciones con clientes")
+    st.caption("Leé los mensajes y respondé directamente, o pedí una propuesta a la IA para revisarla.")
+    st.button("Actualizar conversaciones", icon=":material/refresh:")
     try:
         reclamos = get("/reclamos")["reclamos"]
     except APIError as error:
@@ -411,37 +429,97 @@ def reclamos_soporte():
     if not reclamos:
         st.info("No hay reclamos nuevos.")
         return
-    filtro = st.segmented_control("Mostrar", ["Pendientes", "Todos"], default="Pendientes")
-    if filtro == "Pendientes":
-        reclamos = [r for r in reclamos if r["estado"] == "abierto"]
-    if not reclamos:
-        st.info("No hay reclamos pendientes.")
+    filtro = st.segmented_control("Mostrar", ["Todas", "Abiertas"], default="Todas")
+    visibles = ([r for r in reclamos if r["estado"] == "abierto"]
+               if filtro == "Abiertas" else reclamos)
+    if not visibles:
+        st.info("No hay conversaciones en esta vista. Probá con «Todas».")
         return
-    for reclamo in reclamos:
-        with st.container(border=True):
-            st.write(
-                f"**Ticket #{reclamo['ticket_id']} · {reclamo['cliente']}**"
+    por_id = {r["ticket_id"]: r for r in visibles}
+    elegido = st.selectbox(
+        "Elegí una conversación", list(por_id),
+        format_func=lambda n: f"#{n} · {por_id[n]['cliente']} · {por_id[n]['texto'][:65]}",
+        key="soporte_conversacion",
+    )
+    reclamo = por_id[elegido]
+    st.caption(
+        f"{reclamo['estado'].capitalize()} · {reclamo.get('producto') or 'Consulta general'}"
+        + (f" · Pedido #{reclamo['pedido_id']}" if reclamo.get("pedido_id") else "")
+    )
+    try:
+        mensajes = get(f"/reclamos/{elegido}/mensajes")["mensajes"]
+    except APIError as error:
+        mostrar_error(error)
+        return
+    for mensaje in mensajes:
+        with st.chat_message(
+            "user" if mensaje["autor"] == "cliente" else "assistant",
+            avatar=":material/person:" if mensaje["autor"] == "cliente"
+            else ":material/support_agent:",
+        ):
+            st.write(mensaje["texto"])
+            st.caption(reclamo["cliente"] if mensaje["autor"] == "cliente" else
+                       ("Soporte · rectificada" if mensaje["tipo"] == "rectificacion"
+                        else "Soporte"))
+            if mensaje["autor"] == "soporte" and mensaje["tipo"] in ("mensaje", "rectificacion"):
+                with st.expander("Corregir este mensaje"):
+                    with st.form(f"rectificar_mensaje_{mensaje['id']}"):
+                        texto_nuevo = st.text_area("Respuesta corregida", value=mensaje["texto"])
+                        motivo = st.text_input("Por qué lo corregís")
+                        corregir = st.form_submit_button("Publicar corrección")
+                    if corregir:
+                        try:
+                            post(f"/reclamos/{elegido}/mensajes/{mensaje['id']}/rectificar", {
+                                "texto": texto_nuevo, "motivo": motivo,
+                            })
+                        except APIError as error:
+                            mostrar_error(error)
+                        else:
+                            st.rerun()
+    with st.expander("Historial de cambios del chat"):
+        try:
+            historial = get(f"/reclamos/{elegido}/mensajes/historial")["mensajes"]
+        except APIError as error:
+            mostrar_error(error)
+        else:
+            st.dataframe(
+                [{"fecha": m["creado"], "autor": m["autor"],
+                  "mensaje": m["texto"], "vigente": m["vigente"],
+                  "motivo de corrección": m.get("motivo") or ""}
+                 for m in historial],
+                hide_index=True,
             )
-            st.caption(
-                f"Reclamo #{reclamo['id']} · {reclamo['estado']} · "
-                f"{reclamo.get('producto') or 'Consulta general'}"
-                + (f" · Pedido #{reclamo['pedido_id']}" if reclamo.get("pedido_id") else "")
-            )
-            st.write(reclamo["texto"])
-            if st.button("Abrir ticket", key=f"abrir_{reclamo['ticket_id']}"):
-                st.session_state.ticket_analizar_id = reclamo["ticket_id"]
+    if st.button("Preparar propuesta con IA", type="primary"):
+        with st.spinner("Ollama está preparando una propuesta para que la revises..."):
+            try:
+                nuevo = post(f"/tickets/{elegido}/analizar", timeout=180)
+            except APIError as error:
+                mostrar_error(error)
+            else:
+                st.session_state.ultima_ejecucion = nuevo["ejecucion_id"]
+                st.session_state.ticket_analizar_id = elegido
                 st.session_state.ir_analisis = True
                 st.rerun()
+    st.caption("La propuesta de IA no se muestra al cliente hasta que la revises.")
+    st.caption("También podés escribir una respuesta propia y enviarla con Enter.")
+    respuesta = st.chat_input("Escribí una respuesta como soporte")
+    if respuesta:
+        try:
+            post(f"/reclamos/{elegido}/mensajes/soporte", {"texto": respuesta.strip()})
+        except APIError as error:
+            mostrar_error(error)
+        else:
+            st.rerun()
 
 
-st.title("SupportOps")
-st.caption("Panel de soporte · Tienda Faro ficticia · Ollama local")
+st.title("SupportOps · Soporte")
+st.caption("Tienda Faro ficticia · respondé directamente o revisá una propuesta de Ollama")
 if st.session_state.pop("ir_analisis", False):
     st.session_state.seccion = "Análisis y revisión"
 with st.sidebar:
     seccion = st.radio(
         "Sección",
-        ["Resumen", "Reclamos", "Productos y pedidos", "Tickets",
+        ["Resumen", "Conversaciones", "Productos y pedidos", "Tickets",
          "Análisis y revisión", "Simulación"],
         key="seccion",
     )
@@ -458,7 +536,7 @@ if seccion == "Resumen":
     resumen()
 elif seccion == "Tickets":
     tickets()
-elif seccion == "Reclamos":
+elif seccion == "Conversaciones":
     reclamos_soporte()
 elif seccion == "Productos y pedidos":
     productos_soporte()

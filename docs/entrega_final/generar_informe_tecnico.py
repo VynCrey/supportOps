@@ -189,13 +189,13 @@ story.append(toc)
 newpage()
 
 h1("1. Resumen ejecutivo")
-p("SupportOps es un sistema local de demostración para una <b>tienda ficticia</b>. Ofrece dos pantallas: una para que un cliente de prueba consulte productos, registre compras simuladas y presente reclamos, y otra para que el equipo de soporte analice esos reclamos. Un modelo local de Ollama propone respuestas con apoyo en documentos; una persona decide qué respuesta queda visible. Todo el flujo se registra en PostgreSQL.")
+p("SupportOps es un sistema local de demostración para una <b>tienda ficticia</b>. Ofrece dos pantallas: una para que un cliente de prueba consulte productos, registre compras simuladas y converse con soporte, y otra para que el operador lea y responda. Ollama puede proponer una respuesta apoyada en documentos; la persona decide si la publica. La conversación y sus decisiones quedan en PostgreSQL.")
 p("El proyecto reúne FastAPI, PostgreSQL, Streamlit, recuperación de conocimiento y un modelo de lenguaje ejecutado en la misma computadora. No necesita AWS, Docker ni mantener encendida otra PC. El repositorio de referencia es <link href='https://github.com/VynCrey/supportOps' color='#006F73'>github.com/VynCrey/supportOps</link>.")
 h2("1.1 Resultado de la entrega")
 table(["Componente", "Función en la demostración"], [
-    ["Pantalla de cliente", "Catálogo ficticio, pedido simulado, reclamo asociado a pedido o producto, PDF de respaldo acotado y consulta de la respuesta revisada."],
-    ["Pantalla de soporte", "Bandeja, análisis con IA, citas, revisión humana, historial y rectificación posterior."],
-    ["API y datos", "Persistencia local de productos, pedidos, tickets, documentos, ejecuciones, revisiones y correcciones."],
+    ["Pantalla de cliente", "Catálogo, compra simulada y chat persistente para reclamos, con PDF de respaldo acotado."],
+    ["Pantalla de soporte", "Chat, respuesta directa o propuesta de IA, citas, revisión humana y rectificación."],
+    ["API y datos", "Persistencia local de productos, pedidos, tickets, mensajes, documentos, ejecuciones y decisiones."],
     ["Controles", "Revisión antes de mostrar respuestas, detección de pedidos de secretos, negativa a extraer datos internos y tratamiento de instrucciones externas como no confiables."],
 ], [49 * mm, 123 * mm])
 p("La palabra “terminado” se refiere al <b>prototipo académico local</b> descrito aquí. Los precios, clientes y compras son ficticios; no se conecta con pagos, mensajería ni bases de una empresa real. Esa frontera permite presentarlo completo y reproducible sin atribuirle una operación comercial que no realiza.")
@@ -203,9 +203,10 @@ p("La palabra “terminado” se refiere al <b>prototipo académico local</b> de
 h1("2. Problema, objetivo y caso de uso")
 p("En una mesa de ayuda, una respuesta puede requerir identificar el problema, buscar instrucciones vigentes y comprobar que el texto no pida credenciales ni prometa acciones inexistentes. SupportOps ensaya ese circuito en un entorno controlado. El objetivo es <b>reducir trabajo de búsqueda y redacción sin quitar la decisión final al operador</b>.")
 h2("2.1 Escenario ficticio")
-p("La empresa de prueba se denomina <b>Tienda Faro</b>. Un cliente de demostración ve ocho productos del catálogo y registra una compra sin pago. Si necesita consultar un precio, la disponibilidad, un pedido o un reclamo, crea un ticket desde su pantalla. El operador lo recibe en una bandeja, pide una propuesta al agente y la aprueba, edita o rechaza. Si detecta luego un error, registra una rectificación y el cliente ve la versión vigente.")
+p("La empresa de prueba se denomina <b>Tienda Faro</b>. El cliente ve ocho productos y registra compras sin pago. Para consultar o reclamar abre una conversación ligada a un ticket. Puede enviar más mensajes y soporte puede responder directamente o revisar una propuesta del agente. Si una respuesta se equivoca, el operador registra una rectificación y el cliente ve la versión vigente.")
 h2("2.2 Reglas de aceptación")
 bullet("La propuesta de IA no llega a la pantalla del cliente antes de una revisión humana.")
+bullet("Cliente y soporte pueden continuar el mismo chat; el historial se conserva tras cerrar el navegador.")
 bullet("La respuesta final queda vinculada a ticket, ejecución, revisión y, si corresponde, corrección posterior.")
 bullet("Un pedido no consume dinero real; el inventario y los clientes son ficticios.")
 bullet("Una solicitud de datos internos masivos o una orden inyectada no se entrega al modelo como instrucción.")
@@ -217,23 +218,23 @@ p("Las dos pantallas Streamlit consumen una API FastAPI que ejecuta consultas pa
 story.append(flow_diagram())
 story.append(Spacer(1, 3 * mm))
 table(["Capa", "Archivo o servicio", "Responsabilidad"], [
-    ["Cliente", "cliente_app.py · puerto 8502", "Catálogo, compras simuladas, reclamos y respuestas revisadas."],
-    ["Soporte", "streamlit_app.py · puerto 8501", "Bandeja, análisis, revisión, correcciones y métricas."],
+    ["Cliente", "cliente_app.py · puerto 8502", "Catálogo, compras simuladas y conversaciones con soporte."],
+    ["Soporte", "streamlit_app.py · puerto 8501", "Chat, respuesta propia, propuesta de IA, revisión y métricas."],
     ["API", "main.py / run.py · puerto 8000", "Validación de entradas, rutas HTTP y errores controlados."],
     ["Datos", "db.py / PostgreSQL", "Tablas relacionales y trazabilidad de ejecuciones."],
     ["IA", "analysis.py / Ollama", "Triage, plan de búsqueda, borrador y supervisión."],
     ["Conocimiento", "retrieval.py / kb.json", "Recuperación léxica, por categoría e híbrida."],
 ], [30 * mm, 52 * mm, 90 * mm])
 h2("3.1 Recorrido de una consulta")
-p("Cliente → reclamo → ticket → análisis local → búsqueda documental → borrador con citas → controles de seguridad → revisión del operador → respuesta visible al cliente. Cada análisis guarda su resultado y su traza; la revisión se escribe aparte. Esta separación permite inspeccionar qué propuso la IA y qué decidió la persona.")
+p("Cliente → conversación ligada a un ticket → respuesta directa de soporte o análisis local → búsqueda documental → borrador con citas → controles de seguridad → revisión del operador → respuesta visible al cliente. El cliente puede continuar el mismo chat. Cada análisis guarda su resultado y traza; los borradores internos no se publican.")
 
 h1("4. Datos y base PostgreSQL")
-p("PostgreSQL conserva las relaciones y permite filtrar, contar y auditar sin depender de la memoria del navegador. El esquema tiene once tablas. Los registros de demostración se crean con <b>bootstrap.py</b>; el catálogo se toma de <b>catalogo_demo.json</b>. La carga es repetible y no vuelve a insertar productos existentes, por lo que conserva el stock de los pedidos simulados.")
+p("PostgreSQL conserva las relaciones y permite filtrar, contar y auditar sin depender de la memoria del navegador. El esquema tiene doce tablas, incluida la de mensajes. <b>bootstrap.py</b> crea la muestra y <b>run.py</b> aplica el esquema al arrancar, también sobre bases ya existentes. El catálogo viene de <b>catalogo_demo.json</b>; repetir la carga no repone el stock consumido en pedidos simulados.")
 table(["Grupo", "Tablas y uso"], [
     ["Operación", "clientes, tickets y eventos: quién consulta, qué ocurrió y cuándo."],
     ["Conocimiento", "documentos y relaciones: procedimientos y enlaces para recuperación."],
     ["IA y decisiones", "ejecuciones, revisiones y correcciones: salida del agente, decisión inicial y versiones posteriores."],
-    ["Tienda ficticia", "productos, pedidos y reclamos: catálogo, inventario simulado y vínculo con tickets."],
+    ["Tienda ficticia", "productos, pedidos, reclamos y mensajes_reclamo: catálogo, casos y chat persistente."],
 ], [41 * mm, 131 * mm])
 h2("4.1 Muestras y conjuntos de evaluación")
 table(["Conjunto", "Cantidad", "Finalidad"], [
@@ -246,34 +247,35 @@ p("Los 20.000 tickets pertenecen a la <b>base local</b> donde se ejecutó genera
 
 h1("5. Pantalla del cliente")
 p("La vista de Tienda Faro presenta el catálogo, el precio y la disponibilidad ficticios. El cliente de prueba puede elegir un producto y registrar un pedido; el sistema reduce el stock dentro de una transacción y guarda el precio de ese momento. En “Mis pedidos” ve solo los pedidos del cliente seleccionado.")
-p("En “Mis reclamos” puede asociar la consulta a un pedido o producto, escribir el problema y agregar un PDF de respaldo. Cada consulta crea un ticket. Mientras no haya decisión humana, el estado visible es pendiente. Al aprobar o editar, se muestra la respuesta final; al rechazar, se informa que soporte prepara una nueva respuesta. Si hay una rectificación, se identifica la nueva versión.")
+p("En “Conversaciones” puede iniciar un caso asociado a un pedido o producto y adjuntar un PDF de respaldo. Ese primer mensaje crea un ticket; los siguientes continúan el mismo caso. El chat muestra mensajes propios y respuestas publicadas por soporte, nunca borradores de IA. Un mensaje nuevo reabre el caso. Tras una rectificación se muestra la respuesta vigente.")
 h2("5.1 Ejemplo de uso")
 table(["Paso", "Acción", "Resultado"], [
     ["1", "Elegir Cliente demo 2 y revisar Auricular Faro.", "Se muestran datos del catálogo ficticio."],
     ["2", "Comprar una unidad (simulado).", "Se registra un pedido sin cobrar."],
     ["3", "Reclamar: “El auricular dejó de encender”.", "Se crea un ticket ligado al pedido."],
-    ["4", "Esperar la revisión de soporte.", "El cliente no ve el borrador de IA."],
-    ["5", "Actualizar Mis reclamos.", "Se muestra la respuesta aprobada o corregida."],
+    ["4", "Soporte responde o revisa una propuesta de IA.", "El cliente no ve el borrador interno."],
+    ["5", "Actualizar Conversaciones y escribir otra consulta.", "Ambos lados continúan el mismo chat."],
 ], [16 * mm, 70 * mm, 86 * mm])
 p("La selección del cliente en esta pantalla sirve para la <b>simulación local</b>; no constituye una identidad autenticada para un servicio público.")
 
 h1("6. Pantalla de soporte")
-p("El operador dispone de Resumen, Reclamos, Productos y pedidos, Tickets, Análisis y revisión, y Simulación. La bandeja permite abrir un reclamo concreto; el número del ticket pasa al área de análisis. Allí se consultan el texto, categoría propuesta, decisión automática, borrador, citas y documentos recuperados.")
+p("El operador dispone de Resumen, Conversaciones, Productos y pedidos, Tickets, Análisis y revisión, y Simulación. En Conversaciones lee los mensajes del cliente y puede responder directamente. Para recibir ayuda de la IA abre el caso en Análisis y revisión: allí ve categoría, decisión automática, borrador, citas y evidencia antes de publicar.")
 h2("6.1 Decisión y corrección")
 table(["Acción", "Efecto"], [
     ["Aprobar", "Publica el texto del borrador después de escribir un motivo real."],
     ["Editar", "Requiere una respuesta corregida y motivo; publica el texto humano."],
     ["Rechazar", "No publica respuesta. Es la única opción para un análisis bloqueado."],
+    ["Responder directo", "Publica un mensaje escrito por el operador, sin pasar por IA."],
     ["Corregir después", "Agrega una nueva versión con operador y motivo; conserva la revisión anterior."],
 ], [46 * mm, 126 * mm])
-p("La revisión inicial es única por ejecución. Una segunda llamada devuelve HTTP 409. La corrección posterior constituye otro registro; no modifica ni borra el original. Al aprobar o editar, el ticket queda resuelto; al rechazar o retirar una respuesta, vuelve a abierto. Cada cambio genera un evento. Este diseño permite rectificar una equivocación y reconstruir el historial.")
+p("La revisión inicial es única por ejecución: una segunda llamada devuelve HTTP 409. Si el chat cambió tras el análisis, se exige analizar de nuevo. Las correcciones conservan la versión anterior para auditoría y muestran la nueva al cliente. Una respuesta deja el ticket resuelto; otro mensaje del cliente lo reabre. Cada cambio genera un evento.")
 
 h1("7. Agente y base de conocimiento")
 p("El análisis se divide en cuatro roles. <b>Triage</b> clasifica y señala datos faltantes. <b>Conocimiento</b> elige una búsqueda léxica, por categoría o híbrida. <b>Borrador</b> propone un texto y cita únicamente IDs de la evidencia entregada. <b>Supervisor</b> revisa respaldo y seguridad. Un control de código aplica reglas adicionales antes de permitir que el operador publique una respuesta.")
 h2("7.1 Documentos y citas")
 p("La base documental inicial contiene 56 piezas con identificadores KB-###. Para reclamos asociados a un producto, el análisis añade una ficha CAT-PR-### con datos actuales de ese producto y del pedido simulado. Si el reclamo no señala un producto, agrega CAT-CATALOGO con los ocho productos públicos. No expone la lista de clientes ni pedidos ajenos al modelo. El borrador solo puede citar IDs presentes en la evidencia de esa ejecución; una cita inventada bloquea la salida.")
 h2("7.2 Límites de la generación")
-p("El agente produce propuestas, no garantías de exactitud. Puede confundir categorías, elegir documentos poco pertinentes o redactar algo incompleto. Para consultas simples de precio o disponibilidad, una regla reemplaza el borrador con valores de la ficha pública del catálogo; la propuesta igualmente requiere revisión humana. La clasificación “listo” del supervisor no envía por sí sola una respuesta. Las preguntas independientes de la pantalla de simulación no comparten una memoria de conversación persistente.")
+p("El agente produce propuestas, no garantías de exactitud. Puede confundir categorías, elegir documentos poco pertinentes o redactar algo incompleto. Para un chat, recibe el último mensaje del cliente y hasta ocho mensajes recientes ya publicados; ninguna propuesta interna entra en ese contexto. Las consultas de precio simples usan datos de la ficha pública, siempre bajo revisión humana. La pantalla de Simulación conserva tickets independientes como práctica rápida.")
 
 h1("8. Seguridad y límites de datos")
 p("Los controles se aplican en varias capas: validación de entradas, búsqueda limitada, esquema de citas, detector de solicitudes de secretos y decisión humana obligatoria. El programa no dispone de una herramienta para volcar tablas completas por una petición al agente. Las consultas explícitas para obtener toda la base de datos o todos los clientes, y las órdenes para ignorar instrucciones, se apartan del modelo; se conserva una propuesta de negativa para revisión humana.")
@@ -294,7 +296,7 @@ table(["Recurso o riesgo", "Tratamiento en el proyecto"], [
 ], [50 * mm, 122 * mm])
 
 h1("9. Pruebas y resultados")
-p("La revisión automatizada del <b>25/11/2026</b> ejecutó <b>60 pruebas: 60 correctas</b>. Incluye análisis y recuperación, catálogo ficticio, rechazo de solicitudes de datos internos, PDF activo, compra simulada y respuesta visible únicamente tras revisión. Una integración previa con PostgreSQL temporal recorrió esquema, KB, pedido, reclamo, análisis, revisión y rectificación. Las dos pantallas se ejercitaron con respuestas simuladas. Estas verificaciones no prueban el acierto del modelo en todas las preguntas posibles.")
+p("La revisión automatizada del <b>25/11/2026</b> ejecutó <b>63 pruebas: 63 correctas</b>. Incluye análisis, recuperación, catálogo, PDF, chat de ambas pantallas y publicación humana. Una integración aislada con PostgreSQL recorrió creación del caso, mensajes, revisión, rechazo de propuestas viejas y rectificaciones; la base real del usuario no se tocó. Estas verificaciones no prueban el acierto del modelo en todas las preguntas posibles.")
 h2("9.1 Evaluación histórica H5")
 p("La corrida H5 del <b>27/10/2026</b> evaluó 20 tickets reservados sobre una versión anterior. Acertó la categoría en 14/20, obtuvo evidencia aceptable o abstención correcta en 9/20, y una decisión automática dentro del rango esperado en 17/20. Los tres criterios se cumplieron juntos en <b>7/20</b>. Algunos borradores de esos siete también requerían corrección humana. T01 y T02 se rechazaron; T03 se aprobó; T20 se editó. Los registros permanecen en docs/eval/h5_v2.md y su CSV.")
 h2("9.2 Recuperación documental")
@@ -319,7 +321,7 @@ table(["Orden", "Archivo", "Qué hace"], [
 p("El paquete de archivos no contiene la base original, contraseñas ni pesos del modelo. La preparación reconstruye una base local de demostración. Los 20.000 tickets generados para análisis histórico no se trasladan automáticamente. El procedimiento completo está en LEEME_NETBOOK.md.")
 
 h1("11. Alcance, límites y continuidad")
-p("El proyecto queda cerrado como <b>demostración local supervisada</b>: dos pantallas, catálogo, compras simuladas, reclamos, propuesta de IA con evidencia, decisión humana y rectificación registrada. La base es ficticia, y los resultados históricos permiten mostrar tanto aciertos como fallos del agente.")
+p("El proyecto queda cerrado como <b>demostración local supervisada</b>: dos pantallas, catálogo, compras simuladas, chat persistente, propuesta de IA con evidencia, respuesta del operador y rectificación registrada. La base es ficticia, y los resultados históricos permiten mostrar tanto aciertos como fallos del agente.")
 table(["Límite explícito", "Consecuencia para el uso"], [
     ["Datos y compras ficticios", "No se realizan cobros, entregas ni consultas a una empresa real."],
     ["Modelo local de 3B", "Las respuestas pueden variar y requieren evaluación del operador."],
@@ -338,7 +340,7 @@ table(["Referencia", "Contenido"], [
     ["Repositorio", "<link href='https://github.com/VynCrey/supportOps' color='#006F73'>https://github.com/VynCrey/supportOps</link>"],
     ["Código", "main.py, db.py, analysis.py, safety.py, cliente_app.py, streamlit_app.py, pdf_guard.py."],
     ["Datos", "schema.sql, catalogo_demo.json, kb.json, generar_datos.py."],
-    ["Pruebas", "test_analysis.py, test_marco.py, test_tienda.py, test_cliente_app.py y docs/eval/."],
+    ["Pruebas", "test_analysis.py, test_marco.py, test_tienda.py, test_chat.py, test_cliente_app.py y docs/eval/."],
     ["Instalación", "LEEME_NETBOOK.md y scripts numerados 01 a 05."],
 ], [37 * mm, 135 * mm])
 p("La imagen de portada es una ilustración conceptual generada con IA y no una captura del sistema. Se conserva en docs/entrega_final/portada_ia.png. El informe usa los nombres de los autores y el año indicados para la presentación.", "small")
