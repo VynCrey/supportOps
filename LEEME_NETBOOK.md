@@ -42,13 +42,14 @@ Esperá el mensaje **«Preparacion terminada»**. Si falla, leé el error de la 
 ## Demostración de las dos pantallas
 
 1. En la pantalla del cliente, elegí un cliente ficticio, mirá el catálogo y hacé una compra simulada. No se cobra dinero real.
-2. En **Mis reclamos**, seleccioná el pedido o producto, escribí una consulta y, si querés, adjuntá un PDF de texto de hasta 2 MB y 5 páginas. El archivo no se conserva; solo se agrega el texto extraído al ticket como material no confiable.
-3. En la pantalla de soporte, abrí **Reclamos**, seleccioná el ticket y tocá **Analizar ticket**. Revisá la propuesta, sus citas y la evidencia. Si el resultado no corresponde, elegí **editar** y escribí una respuesta correcta, o **rechazar** si no puede responderse.
-4. Tras guardar la revisión, actualizá **Mis reclamos** en la pantalla del cliente. Solo se muestra la respuesta revisada. Si soporte detecta luego un error, puede registrar una **corrección posterior** con motivo; el cliente ve la nueva versión y el historial conserva la anterior.
+2. En **Conversaciones** → **Iniciar una conversación nueva**, seleccioná el pedido o producto si corresponde y escribí el primer mensaje. También podés adjuntar un PDF de texto de hasta 2 MB y 5 páginas. El archivo no se conserva; solo se agrega el texto extraído al ticket como material no confiable.
+3. En la pantalla de soporte, abrí **Conversaciones**, elegí el ticket y leé el chat. Podés escribir una respuesta propia en la caja inferior. Se verá en la pantalla del cliente al actualizarla. Si preferís ayuda de la IA, tocá **Preparar propuesta con IA**: se abre **Análisis y revisión**, donde leés el borrador y las fuentes. **Aprobar** o **editar** publica la respuesta; **rechazar** no publica el borrador. Siempre escribí un motivo.
+4. En la pantalla del cliente, tocá **Actualizar conversación** y continuá el chat desde la caja inferior. Soporte verá el nuevo mensaje al tocar **Actualizar conversaciones**. Podés repetir el intercambio cuantas veces quieras; queda guardado en PostgreSQL y sigue disponible tras cerrar el navegador.
+5. Si soporte se equivoca, puede usar **Corregir este mensaje** en una respuesta escrita directamente. Para una propuesta publicada tras revisión de IA, usá **Análisis y revisión** → **Corregir una decisión anterior**. La versión anterior queda en el historial y la nueva aparece en el chat del cliente.
 
-Los avisos de compra y reclamo quedan visibles tras actualizar la pantalla. En **Mis reclamos**, el botón **Actualizar respuestas** vuelve a consultar el estado guardado en PostgreSQL. En soporte, **Actualizar bandeja** muestra los reclamos nuevos y el filtro **Pendientes** ayuda a empezar por los abiertos.
+Para una prueba sencilla, el cliente puede escribir «Compré un auricular ficticio y no enciende». Soporte puede responder «¿Podés indicar el número de pedido? No compartas claves ni datos bancarios». El cliente puede contestar y soporte continuar o pedir una propuesta nueva a la IA.
 
-Un ticket pasa a **resuelto** al aprobar o editar una respuesta. Si se rechaza o se retira una respuesta por error, vuelve a **abierto**; la corrección posterior queda registrada como evento.
+Un ticket pasa a **resuelto** al publicar una respuesta. Si el cliente vuelve a escribir, pasa a **abierto**. Si se rechaza o se retira una respuesta por error, vuelve a **abierto**; la corrección posterior queda registrada como evento.
 
 Las consultas que piden una extracción masiva de datos internos o contienen órdenes para cambiar las instrucciones del agente se separan del modelo y pasan a revisión humana. El programa corre solo en `127.0.0.1`; la selección de clientes es una simulación, no una autenticación para Internet.
 
@@ -64,7 +65,7 @@ La primera llamada al modelo puede tardar. Si el panel dice que la API no está 
 4. Abrí **Análisis y revisión humana**. El ID recién creado debería estar precargado; comprobalo y tocá **Analizar ticket** una sola vez.
 5. Revisá la categoría, los documentos consultados, el borrador y la decisión automática. En **Registrar revisión**, aprobá, editá o rechazá según lo que realmente produjo el modelo. Escribí un motivo concreto y guardá la revisión. Si la ejecución está bloqueada, solo se puede rechazar.
 
-La revisión se guarda en PostgreSQL **sin enviar ningún mensaje a un cliente**. Como el modelo genera texto, sus respuestas pueden variar; la demostración no garantiza una aprobación automática.
+Esta sección de tickets de práctica no publica en una conversación. Si analizás un reclamo abierto desde **Conversaciones**, aprobar o editar sí publica la respuesta en el chat ficticio local. Como el modelo genera texto, sus respuestas pueden variar; la demostración no garantiza una aprobación automática.
 
 ## 5. Simular varias consultas como una conversación
 

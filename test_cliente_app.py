@@ -9,7 +9,7 @@ from streamlit.testing.v1 import AppTest
 
 class ClienteAppTest(unittest.TestCase):
     def test_compra_y_respuesta_solo_despues_de_revision(self):
-        estado = {"pedidos": [], "revisado": False}
+        estado = {"pedidos": [], "revisado": False, "mensaje_cliente": None}
         producto = {
             "id": "PR-001", "nombre": "Auriculares Nube", "categoria": "Audio",
             "descripcion": "Producto ficticio", "precio": 34990, "stock": 4,
@@ -33,6 +33,16 @@ class ClienteAppTest(unittest.TestCase):
                 return ({"estado": "respondido", "texto": "Respuesta revisada por soporte",
                          "version": 1, "corregida": False} if estado["revisado"]
                         else {"estado": "pendiente", "texto": "BORRADOR INTERNO"})
+            if ruta == "/reclamos/12/mensajes":
+                mensajes = [{"autor": "cliente", "texto": "No encuentro mi factura ficticia",
+                             "tipo": "inicio"}]
+                if estado["mensaje_cliente"]:
+                    mensajes.append({"autor": "cliente", "texto": estado["mensaje_cliente"],
+                                     "tipo": "mensaje"})
+                if estado["revisado"]:
+                    mensajes.append({"autor": "soporte", "texto": "Respuesta revisada por soporte",
+                                     "tipo": "revision"})
+                return {"mensajes": mensajes}
             raise AssertionError(ruta)
 
         def post(ruta, cuerpo=None, **_opciones):
@@ -43,6 +53,9 @@ class ClienteAppTest(unittest.TestCase):
                     "cantidad": 1, "total": producto["precio"],
                 })
                 return {"id": 7}
+            if ruta == "/reclamos/12/mensajes/cliente":
+                estado["mensaje_cliente"] = cuerpo["texto"]
+                return {"id": 5}
             raise AssertionError(ruta)
 
         with patch("api_client.get", side_effect=get), patch("api_client.post", side_effect=post):
@@ -57,10 +70,12 @@ class ClienteAppTest(unittest.TestCase):
             app.radio[0].set_value("Mis pedidos").run()
             self.assertTrue(any("Pedido #7" in x.value for x in app.markdown))
 
-            app.radio[0].set_value("Mis reclamos").run()
+            app.radio[0].set_value("Conversaciones").run()
             self.assertFalse(any("BORRADOR INTERNO" in x.value for x in app.markdown))
+            app.chat_input[0].set_value("¿Me pueden ayudar con la factura?").run()
+            self.assertEqual(estado["mensaje_cliente"], "¿Me pueden ayudar con la factura?")
             estado["revisado"] = True
-            next(b for b in app.button if b.label == "Actualizar respuestas").click().run()
+            next(b for b in app.button if b.label == "Actualizar conversación").click().run()
             self.assertTrue(any("Respuesta revisada por soporte" in x.value
                                 for x in app.markdown))
             self.assertFalse(app.exception)

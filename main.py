@@ -46,6 +46,20 @@ class NuevoReclamo(BaseModel):
     pedido_id: int | None = Field(default=None, gt=0)
 
 
+class MensajeCliente(BaseModel):
+    cliente_id: int = Field(gt=0)
+    texto: str = Field(min_length=10, max_length=4000)
+
+
+class MensajeSoporte(BaseModel):
+    texto: str = Field(min_length=1, max_length=8000)
+
+
+class RectificacionMensaje(BaseModel):
+    texto: str = Field(min_length=1, max_length=8000)
+    motivo: str = Field(min_length=1, max_length=1000)
+
+
 class NuevaCorreccion(BaseModel):
     decision: Literal["editar", "rechazar"]
     texto_final: str = Field(default="", max_length=8000)
@@ -201,12 +215,74 @@ def crear_app(clave_db: str) -> FastAPI:
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
 
+    @app.get("/reclamos/{ticket_id}/mensajes")
+    def listar_mensajes_reclamo(
+        ticket_id: int, cliente_id: int | None = Query(default=None, gt=0)
+    ):
+        mensajes = datos.listar_mensajes_reclamo(ticket_id, cliente_id)
+        if mensajes is None:
+            raise HTTPException(status_code=404, detail="Conversación no encontrada")
+        return {"ticket_id": ticket_id, "mensajes": mensajes}
+
+    @app.get("/reclamos/{ticket_id}/mensajes/historial")
+    def historial_mensajes_reclamo(ticket_id: int):
+        mensajes = datos.historial_mensajes_reclamo(ticket_id)
+        if mensajes is None:
+            raise HTTPException(status_code=404, detail="Conversación no encontrada")
+        return {"ticket_id": ticket_id, "mensajes": mensajes}
+
+    @app.post("/reclamos/{ticket_id}/mensajes/cliente", status_code=201)
+    def enviar_mensaje_cliente(ticket_id: int, nuevo: MensajeCliente):
+        try:
+            mensaje = datos.enviar_mensaje_cliente(
+                ticket_id, nuevo.cliente_id, nuevo.texto
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        if mensaje is None:
+            raise HTTPException(status_code=404, detail="Conversación no encontrada")
+        return mensaje
+
+    @app.post("/reclamos/{ticket_id}/mensajes/soporte", status_code=201)
+    def enviar_mensaje_soporte(ticket_id: int, nuevo: MensajeSoporte):
+        try:
+            mensaje = datos.enviar_mensaje_soporte(ticket_id, nuevo.texto)
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+        if mensaje is None:
+            raise HTTPException(status_code=404, detail="Conversación no encontrada")
+        return mensaje
+
+    @app.post("/reclamos/{ticket_id}/mensajes/{mensaje_id}/rectificar", status_code=201)
+    def rectificar_mensaje_soporte(
+        ticket_id: int, mensaje_id: int, nuevo: RectificacionMensaje
+    ):
+        try:
+            mensaje = datos.rectificar_mensaje_soporte(
+                ticket_id, mensaje_id, nuevo.texto, nuevo.motivo
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+        if mensaje is None:
+            raise HTTPException(status_code=404, detail="Mensaje no encontrado")
+        return mensaje
+
     @app.get("/reclamos/{ticket_id}/respuesta")
     def respuesta_reclamo(ticket_id: int, cliente_id: int = Query(gt=0)):
         ticket = datos.obtener_ticket(ticket_id)
         if (ticket is None or ticket["cliente_id"] != cliente_id
                 or not datos.es_reclamo(ticket_id)):
             raise HTTPException(status_code=404, detail="Reclamo no encontrado")
+        if hasattr(datos, "listar_mensajes_reclamo"):
+            mensajes = datos.listar_mensajes_reclamo(ticket_id, cliente_id) or []
+            if mensajes and mensajes[-1]["autor"] == "soporte":
+                ultimo = mensajes[-1]
+                return {
+                    "ticket_id": ticket_id, "estado": "respondido",
+                    "texto": ultimo["texto"], "version": 2 if ultimo["tipo"] == "rectificacion" else 1,
+                    "corregida": ultimo["tipo"] == "rectificacion",
+                }
+            return {"ticket_id": ticket_id, "estado": "pendiente", "texto": ""}
         for ejecucion in datos.listar_ejecuciones_ticket(ticket_id):
             historial = datos.historial_revision(ejecucion["id"])
             if historial is not None:

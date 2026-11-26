@@ -111,3 +111,48 @@ CREATE TABLE IF NOT EXISTS correcciones (
 );
 
 CREATE INDEX IF NOT EXISTS ix_correcciones_revision ON correcciones(revision_id, id);
+
+-- Conversaciones ficticias visibles para cliente y soporte. Las propuestas de IA
+-- nunca se insertan aqui: solo una decision humana o un mensaje del operador.
+CREATE TABLE IF NOT EXISTS mensajes_reclamo (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ticket_id BIGINT NOT NULL REFERENCES reclamos(ticket_id),
+    autor TEXT NOT NULL CHECK (autor IN ('cliente', 'soporte')),
+    texto TEXT NOT NULL CHECK (char_length(btrim(texto)) BETWEEN 1 AND 8000),
+    creado TIMESTAMPTZ NOT NULL DEFAULT now(),
+    ejecucion_id BIGINT REFERENCES ejecuciones(id),
+    rectifica_id BIGINT REFERENCES mensajes_reclamo(id),
+    motivo TEXT,
+    vigente BOOLEAN NOT NULL DEFAULT TRUE,
+    tipo TEXT NOT NULL DEFAULT 'mensaje'
+        CHECK (tipo IN ('inicio', 'mensaje', 'revision', 'rectificacion'))
+);
+
+CREATE INDEX IF NOT EXISTS ix_mensajes_reclamo_ticket
+    ON mensajes_reclamo(ticket_id, id);
+
+-- Al actualizar una base existente, cada reclamo conserva su primer mensaje.
+INSERT INTO mensajes_reclamo (ticket_id, autor, texto, creado, tipo)
+SELECT r.ticket_id, 'cliente', t.texto, t.creado, 'inicio'
+FROM reclamos AS r JOIN tickets AS t ON t.id = r.ticket_id
+WHERE NOT EXISTS (
+    SELECT 1 FROM mensajes_reclamo AS m
+    WHERE m.ticket_id = r.ticket_id AND m.autor = 'cliente'
+);
+
+-- Las respuestas anteriores a esta version tambien aparecen en el chat.
+INSERT INTO mensajes_reclamo (ticket_id, autor, texto, creado, ejecucion_id, tipo)
+SELECT e.ticket_id, 'soporte',
+       COALESCE(c.texto_final, v.texto_final),
+       COALESCE(c.creado, v.creado), e.id, 'revision'
+FROM revisiones AS v
+JOIN ejecuciones AS e ON e.id = v.ejecucion_id
+JOIN reclamos AS r ON r.ticket_id = e.ticket_id
+LEFT JOIN LATERAL (
+    SELECT decision, texto_final, creado
+    FROM correcciones WHERE revision_id = v.id ORDER BY id DESC LIMIT 1
+) AS c ON TRUE
+WHERE COALESCE(c.decision, v.decision) IN ('aprobar', 'editar')
+  AND NOT EXISTS (
+    SELECT 1 FROM mensajes_reclamo AS m WHERE m.ejecucion_id = e.id
+  );

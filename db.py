@@ -249,6 +249,27 @@ class SupportOpsDB:
                 if supervision["decision"] == "bloquear" and decision != "rechazar":
                     raise ValueError("Un borrador bloqueado solo puede rechazarse")
 
+                cursor.execute("SELECT id FROM tickets WHERE id = %s FOR UPDATE",
+                               (fila["ticket_id"],))
+
+                cursor.execute(
+                    "SELECT 1 FROM reclamos WHERE ticket_id = %s",
+                    (fila["ticket_id"],),
+                )
+                es_reclamo = cursor.fetchone() is not None
+                if es_reclamo and decision != "rechazar":
+                    cursor.execute(
+                        "SELECT id FROM mensajes_reclamo WHERE ticket_id = %s "
+                        "AND vigente ORDER BY id DESC LIMIT 1",
+                        (fila["ticket_id"],),
+                    )
+                    ultimo_mensaje = cursor.fetchone()
+                    if (ultimo_mensaje is None or resultado.get("ultimo_mensaje_id")
+                            != ultimo_mensaje["id"]):
+                        raise ValueError(
+                            "La conversación cambió después del análisis. Volvé a analizar antes de responder"
+                        )
+
                 if decision == "aprobar":
                     texto = borrador.get("texto", "")
                     if not isinstance(texto, str) or not texto.strip():
@@ -273,6 +294,15 @@ class SupportOpsDB:
                     (ejecucion_id, decision, texto_final, motivo),
                 )
                 revision = cursor.fetchone()
+                if es_reclamo and decision != "rechazar":
+                    cursor.execute(
+                        """
+                        INSERT INTO mensajes_reclamo
+                            (ticket_id, autor, texto, ejecucion_id, tipo)
+                        VALUES (%s, 'soporte', %s, %s, 'revision')
+                        """,
+                        (fila["ticket_id"], texto_final, ejecucion_id),
+                    )
                 self._registrar_estado_ticket(
                     cursor, fila["ticket_id"], decision != "rechazar",
                     "revision_" + decision,
@@ -393,6 +423,13 @@ class SupportOpsDB:
                 (ticket["id"], pedido_id, producto_id),
             )
             reclamo = cursor.fetchone()
+            cursor.execute(
+                """
+                INSERT INTO mensajes_reclamo (ticket_id, autor, texto, tipo)
+                VALUES (%s, 'cliente', %s, 'inicio')
+                """,
+                (ticket["id"], texto),
+            )
             return {
                 **ticket, "reclamo_id": reclamo["id"], "ticket_id": ticket["id"],
                 "cliente_id": cliente_id, "cliente": cliente["nombre"],
@@ -440,6 +477,159 @@ class SupportOpsDB:
         with self.conectar() as conexion, conexion.cursor() as cursor:
             cursor.execute("SELECT 1 FROM reclamos WHERE ticket_id = %s", (ticket_id,))
             return cursor.fetchone() is not None
+
+    def listar_mensajes_reclamo(self, ticket_id: int, cliente_id: int | None = None):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT t.cliente_id FROM reclamos AS r
+                JOIN tickets AS t ON t.id = r.ticket_id
+                WHERE r.ticket_id = %s
+                """,
+                (ticket_id,),
+            )
+            reclamo = cursor.fetchone()
+            if reclamo is None or (cliente_id is not None and
+                                  reclamo["cliente_id"] != cliente_id):
+                return None
+            cursor.execute(
+                """
+                SELECT id, ticket_id, autor, texto, creado, tipo
+                FROM mensajes_reclamo
+                WHERE ticket_id = %s AND vigente
+                ORDER BY id
+                """,
+                (ticket_id,),
+            )
+            return cursor.fetchall()
+
+    def historial_mensajes_reclamo(self, ticket_id: int):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM reclamos WHERE ticket_id = %s", (ticket_id,))
+            if cursor.fetchone() is None:
+                return None
+            cursor.execute(
+                """
+                SELECT id, autor, texto, tipo, vigente, rectifica_id, motivo, creado
+                FROM mensajes_reclamo WHERE ticket_id = %s ORDER BY id
+                """,
+                (ticket_id,),
+            )
+            return cursor.fetchall()
+
+    def contexto_conversacion(self, ticket_id: int):
+        """Solo mensajes publicados de este reclamo, sin propuestas internas."""
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id, autor, texto FROM mensajes_reclamo
+                WHERE ticket_id = %s AND vigente
+                ORDER BY id DESC LIMIT 8
+                """,
+                (ticket_id,),
+            )
+            mensajes = list(reversed(cursor.fetchall()))
+            cursor.execute(
+                "SELECT id, texto FROM mensajes_reclamo WHERE ticket_id = %s "
+                "AND autor = 'cliente' ORDER BY id DESC LIMIT 1",
+                (ticket_id,),
+            )
+            ultimo = cursor.fetchone()
+            return {"mensajes": mensajes, "mensaje_cliente_id": ultimo["id"] if ultimo else None,
+                    "ultimo_mensaje_id": mensajes[-1]["id"] if mensajes else None,
+                    "ultimo_texto_cliente": ultimo["texto"] if ultimo else None}
+
+    def rectificar_mensaje_soporte(self, ticket_id: int, mensaje_id: int,
+                                  texto: str, motivo: str):
+        texto, motivo = texto.strip(), motivo.strip()
+        if not 1 <= len(texto) <= 8000 or not motivo or motivo.casefold() == "string":
+            raise ValueError("Escribí una respuesta corregida y el motivo real")
+        if pide_credenciales({"texto": texto}):
+            raise ValueError("La respuesta solicita credenciales y no puede enviarse")
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT m.id, m.ejecucion_id FROM mensajes_reclamo AS m
+                WHERE m.id = %s AND m.ticket_id = %s AND m.autor = 'soporte'
+                  AND m.vigente FOR UPDATE
+                """,
+                (mensaje_id, ticket_id),
+            )
+            original = cursor.fetchone()
+            if original is None:
+                return None
+            if original["ejecucion_id"] is not None:
+                raise ValueError("Corregí esta propuesta desde Análisis y revisión")
+            cursor.execute(
+                "UPDATE mensajes_reclamo SET vigente = FALSE WHERE id = %s",
+                (mensaje_id,),
+            )
+            cursor.execute(
+                """
+                INSERT INTO mensajes_reclamo
+                    (ticket_id, autor, texto, tipo, rectifica_id, motivo)
+                VALUES (%s, 'soporte', %s, 'rectificacion', %s, %s)
+                RETURNING id, ticket_id, autor, texto, creado, tipo
+                """,
+                (ticket_id, texto, mensaje_id, motivo),
+            )
+            mensaje = cursor.fetchone()
+            self._registrar_estado_ticket(cursor, ticket_id, True, "rectificacion_soporte")
+            return mensaje
+
+    def enviar_mensaje_cliente(self, ticket_id: int, cliente_id: int, texto: str):
+        texto = texto.strip()
+        if not 10 <= len(texto) <= 4000:
+            raise ValueError("El mensaje debe tener entre 10 y 4000 caracteres")
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT t.id FROM tickets AS t JOIN reclamos AS r ON r.ticket_id = t.id
+                WHERE t.id = %s AND t.cliente_id = %s FOR UPDATE OF t
+                """,
+                (ticket_id, cliente_id),
+            )
+            if cursor.fetchone() is None:
+                return None
+            cursor.execute(
+                """
+                INSERT INTO mensajes_reclamo (ticket_id, autor, texto)
+                VALUES (%s, 'cliente', %s)
+                RETURNING id, ticket_id, autor, texto, creado, tipo
+                """,
+                (ticket_id, texto),
+            )
+            mensaje = cursor.fetchone()
+            self._registrar_estado_ticket(cursor, ticket_id, False, "mensaje_cliente")
+            return mensaje
+
+    def enviar_mensaje_soporte(self, ticket_id: int, texto: str):
+        texto = texto.strip()
+        if not 1 <= len(texto) <= 8000:
+            raise ValueError("Escribí una respuesta antes de enviarla")
+        if pide_credenciales({"texto": texto}):
+            raise ValueError("La respuesta solicita credenciales y no puede enviarse")
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT t.id FROM tickets AS t JOIN reclamos AS r ON r.ticket_id = t.id
+                WHERE t.id = %s FOR UPDATE OF t
+                """,
+                (ticket_id,),
+            )
+            if cursor.fetchone() is None:
+                return None
+            cursor.execute(
+                """
+                INSERT INTO mensajes_reclamo (ticket_id, autor, texto)
+                VALUES (%s, 'soporte', %s)
+                RETURNING id, ticket_id, autor, texto, creado, tipo
+                """,
+                (ticket_id, texto),
+            )
+            mensaje = cursor.fetchone()
+            self._registrar_estado_ticket(cursor, ticket_id, True, "mensaje_soporte")
+            return mensaje
 
     def historial_revision(self, ejecucion_id: int):
         with self.conectar() as conexion, conexion.cursor() as cursor:
@@ -512,6 +702,24 @@ class SupportOpsDB:
                 (original["id"], decision, texto_final, motivo.strip(), operador.strip()),
             )
             correccion = cursor.fetchone()
+            cursor.execute(
+                "UPDATE mensajes_reclamo SET vigente = FALSE "
+                "WHERE ejecucion_id = %s AND vigente",
+                (ejecucion_id,),
+            )
+            cursor.execute(
+                "SELECT 1 FROM reclamos WHERE ticket_id = %s",
+                (original["ticket_id"],),
+            )
+            if cursor.fetchone() is not None and decision == "editar":
+                cursor.execute(
+                    """
+                    INSERT INTO mensajes_reclamo
+                        (ticket_id, autor, texto, ejecucion_id, tipo)
+                    VALUES (%s, 'soporte', %s, %s, 'rectificacion')
+                    """,
+                    (original["ticket_id"], texto_final, ejecucion_id),
+                )
             self._registrar_estado_ticket(
                 cursor, original["ticket_id"], decision == "editar",
                 "correccion_" + decision,

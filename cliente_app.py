@@ -8,7 +8,7 @@ from pdf_guard import extraer_pdf
 
 st.set_page_config(
     page_title="Tienda Faro | Cliente", page_icon=":material/storefront:",
-    layout="wide",
+    layout="centered",
 )
 
 
@@ -16,8 +16,8 @@ def dinero(valor):
     return f"${float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-st.title("Tienda Faro")
-st.caption("Tienda ficticia · compras de demostración · soporte revisado por una persona")
+st.title("Tienda Faro · Cliente")
+st.caption("Tienda ficticia · compras de demostración · conversación local con soporte")
 aviso = st.session_state.pop("cliente_aviso", None)
 if aviso:
     st.success(aviso, icon=":material/check_circle:")
@@ -39,7 +39,7 @@ with st.sidebar:
         "Elegí un cliente ficticio", clientes,
         format_func=lambda c: f"{c['nombre']} · {c['plan']}",
     )
-    seccion = st.radio("Sección", ["Catálogo", "Mis pedidos", "Mis reclamos"])
+    seccion = st.radio("Sección", ["Catálogo", "Mis pedidos", "Conversaciones"])
     st.caption("Esta pantalla simula al cliente. No se realizan pagos reales.")
 
 
@@ -101,9 +101,9 @@ elif seccion == "Mis pedidos":
             st.write("Estado: compra simulada. No se procesó ningún pago.")
 
 else:
-    st.header("Mis reclamos y consultas")
-    st.caption("Contá qué necesitás. Soporte revisa la propuesta de la IA antes de mostrarte una respuesta.")
-    st.button("Actualizar respuestas", icon=":material/refresh:")
+    st.header("Conversaciones con soporte")
+    st.caption("Escribí como cliente ficticio. Soporte puede responder y también revisar propuestas de la IA.")
+    st.button("Actualizar conversación", icon=":material/refresh:")
     try:
         pedidos = get("/pedidos", cliente_id=cliente["id"])["pedidos"]
         reclamos = get("/reclamos", cliente_id=cliente["id"])["reclamos"]
@@ -112,26 +112,26 @@ else:
         st.error(str(error))
         st.stop()
 
-    with st.form("nuevo_reclamo"):
-        pedido = st.selectbox(
-            "Pedido relacionado (opcional)", [None, *pedidos],
-            format_func=lambda p: "Sin pedido" if p is None else f"#{p['id']} · {p['producto']}",
-        )
-        producto = st.selectbox(
-            "Producto relacionado (si no elegiste un pedido)", [None, *productos],
-            format_func=lambda p: "Sin producto" if p is None else p["nombre"],
-            help="Si elegiste un pedido, se usará el producto de ese pedido.",
-        )
-        texto = st.text_area(
-            "Consulta o reclamo", placeholder="Por ejemplo: el auricular dejó de encender...",
-            max_chars=4000,
-        )
-        archivo = st.file_uploader(
-            "PDF de respaldo (opcional, máximo 2 MB y 5 páginas)", type=["pdf"],
-            help="Se extrae solo el texto. El PDF no se guarda ni se ejecuta; "
-                 "su contenido se trata como información no confiable.",
-        )
-        enviar = st.form_submit_button("Enviar reclamo", type="primary")
+    with st.expander("Iniciar una conversación nueva", expanded=not reclamos):
+        with st.form("nuevo_reclamo"):
+            pedido = st.selectbox(
+                "Pedido relacionado (opcional)", [None, *pedidos],
+                format_func=lambda p: "Sin pedido" if p is None else f"#{p['id']} · {p['producto']}",
+            )
+            producto = st.selectbox(
+                "Producto relacionado (opcional)", [None, *productos],
+                format_func=lambda p: "Sin producto" if p is None else p["nombre"],
+                help="Si elegiste un pedido, se usará su producto.",
+            )
+            texto = st.text_area(
+                "Primer mensaje", placeholder="Por ejemplo: el auricular dejó de encender...",
+                max_chars=4000,
+            )
+            archivo = st.file_uploader(
+                "PDF de respaldo (opcional, máximo 2 MB y 5 páginas)", type=["pdf"],
+                help="Se extrae solo texto. El PDF no se guarda ni se ejecuta.",
+            )
+            enviar = st.form_submit_button("Iniciar conversación", type="primary")
     if enviar:
         if len(texto.strip()) < 10:
             st.error("Describí el problema con al menos 10 caracteres.")
@@ -153,34 +153,53 @@ else:
                 st.error(str(error))
             else:
                 st.session_state.cliente_aviso = (
-                    f"Reclamo #{nuevo['reclamo_id']} registrado como ticket "
-                    f"#{nuevo['ticket_id']}. Esperá la revisión de soporte."
+                    f"Conversación #{nuevo['ticket_id']} iniciada. Soporte podrá leerla y responder."
                 )
+                st.session_state[f"cliente_conversacion_{cliente['id']}"] = nuevo["ticket_id"]
                 st.rerun()
 
     if not reclamos:
-        st.info("Todavía no hay reclamos para este cliente ficticio.")
-    for reclamo in reclamos:
-        with st.container(border=True):
-            st.write(f"**Reclamo #{reclamo['id']} · ticket #{reclamo['ticket_id']}**")
-            st.caption(f"Estado del ticket: {reclamo['estado']}")
-            if reclamo.get("producto"):
-                st.caption(f"Producto: {reclamo['producto']}")
-            st.write(reclamo["texto"])
-            try:
-                respuesta = get(
-                    f"/reclamos/{reclamo['ticket_id']}/respuesta",
-                    cliente_id=cliente["id"],
-                )
-            except APIError as error:
-                st.error(str(error))
-                continue
-            if respuesta["estado"] == "respondido":
-                st.success("Respuesta revisada por soporte")
-                st.write(respuesta["texto"])
-                if respuesta.get("corregida"):
-                    st.caption(f"Respuesta rectificada · versión {respuesta['version']}")
-            elif respuesta["estado"] == "sin_respuesta":
-                st.caption("Soporte está preparando una respuesta nueva.")
-            else:
-                st.caption("Pendiente de revisión por soporte.")
+        st.info("Todavía no hay conversaciones. Abrí una con el formulario de arriba.")
+        st.stop()
+
+    reclamos_por_id = {r["ticket_id"]: r for r in reclamos}
+    elegido = st.selectbox(
+        "Elegí una conversación", list(reclamos_por_id),
+        format_func=lambda n: f"Ticket #{n} · {reclamos_por_id[n]['texto'][:70]}",
+        key=f"cliente_conversacion_{cliente['id']}",
+    )
+    reclamo = reclamos_por_id[elegido]
+    st.caption(
+        f"{reclamo['estado'].capitalize()} · "
+        f"{reclamo.get('producto') or 'Consulta general'} · "
+        "Los mensajes quedan guardados en esta computadora."
+    )
+    try:
+        mensajes = get(
+            f"/reclamos/{elegido}/mensajes", cliente_id=cliente["id"]
+        )["mensajes"]
+    except APIError as error:
+        st.error(str(error))
+        st.stop()
+    for mensaje in mensajes:
+        with st.chat_message(
+            "user" if mensaje["autor"] == "cliente" else "assistant",
+            avatar=":material/person:" if mensaje["autor"] == "cliente"
+            else ":material/support_agent:",
+        ):
+            st.write(mensaje["texto"])
+            st.caption("Vos" if mensaje["autor"] == "cliente" else
+                       ("Soporte · respuesta corregida" if mensaje["tipo"] == "rectificacion"
+                        else "Soporte"))
+    if mensajes and mensajes[-1]["autor"] == "cliente":
+        st.caption("Soporte todavía no respondió a este último mensaje.")
+    nuevo_mensaje = st.chat_input("Escribí otro mensaje a soporte")
+    if nuevo_mensaje:
+        try:
+            post(f"/reclamos/{elegido}/mensajes/cliente", {
+                "cliente_id": cliente["id"], "texto": nuevo_mensaje.strip(),
+            })
+        except APIError as error:
+            st.error(str(error))
+        else:
+            st.rerun()
