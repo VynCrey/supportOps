@@ -230,7 +230,7 @@ table(["ENTREGA", "DATOS"], [
 story.append(p("Prototipo académico con datos ficticios. Documento digital e imprimible.", "SmallCustom"))
 
 section("Guía de lectura y localización de la entrega", new_page=True)
-para("Este informe sigue los apartados de la plantilla <b>Proyecto Integrador Final</b> del ISFT Nº 197. Documenta lo implementado, las evidencias observadas y los límites de una simulación local. La versión del sistema considerada es la de <b>25/11/2026</b>.")
+para("Este informe sigue los apartados de la plantilla <b>Proyecto Integrador Final</b> del ISFT Nº 197. Documenta lo implementado, las evidencias observadas y los límites de una simulación local. La versión del sistema considerada es la de <b>27/11/2026</b>.")
 table(["Elemento", "Dónde encontrarlo / cómo acceder"], [
     ["Código fuente y versión", "<link href='https://github.com/VynCrey/supportOps' color='#1673B8'>github.com/VynCrey/supportOps</link> · rama <b>main</b>. El historial Git conserva los cambios. El PDF acompaña esta entrega en <b>docs/entrega_final/</b>."],
     ["Instalación y uso", "<b>LEEME_NETBOOK.md</b> (guía de tres pasos en Windows), <b>README.md</b> (detalle técnico) y los iniciadores <b>01_PREPARAR_NETBOOK.cmd</b>, <b>02_INICIAR_API.cmd</b>, <b>03_ABRIR_PANEL.cmd</b>."],
@@ -242,13 +242,13 @@ table(["Momento", "Cambio y evidencia"], [
     ["Base local", "Modelo de tickets, eventos y API con PostgreSQL; panel para análisis y revisión."],
     ["Integración de conocimiento", "Marco incorporó KB y recuperación; se cargaron 56 documentos y 92 relaciones."],
     ["H5 (27/10/2026)", "20 tickets reservados evaluados con versión posterior al PR #5; se conservaron resultados y fallos."],
-    ["Versión de entrega", "Chat persistente entre cliente y soporte, con propuestas revisadas; 63 pruebas automáticas correctas el 25/11/2026. H5 no se repitió con esta versión."],
+    ["Versión de entrega", "Tienda y soporte con chat persistente, entregas simuladas y propuestas revisadas; 69 pruebas automáticas correctas el 27/11/2026. H5 no se repitió con esta versión."],
 ], [110, CW - 110])
 para("El alcance comprobado es un sistema local para consultas ficticias y revisión humana. Las respuestas se muestran en el chat del cliente ficticio de esta computadora; no salen a un canal externo ni constituyen un despliegue de producción.")
 
 section("1. Presentación del proyecto", new_page=True)
 sub("Descripción general")
-para("SupportOps es un prototipo de mesa de ayuda para una tienda ficticia. Cliente y soporte conversan en dos pantallas conectadas por una API local. La IA clasifica el último mensaje del cliente, busca documentos, redacta una propuesta con citas y evalúa si necesita revisión. El operador decide si responde directamente, aprueba, edita o rechaza la propuesta. El historial del chat queda en PostgreSQL.")
+para("SupportOps es una mesa de ayuda local para una tienda ficticia. Cliente y soporte conversan en dos pantallas conectadas por una API local. El cliente puede ver productos, comprar ficticiamente, consultar el estado de un pedido simulado y adjuntar una foto a un reclamo. Un conjunto acotado de consultas se responde con datos comprobados; los demás casos generan una propuesta privada para que el operador apruebe, edite o rechace. El chat queda en PostgreSQL.")
 sub("Problema y contexto")
 para("En un soporte con procedimientos dispersos, un operador puede tardar en localizar el documento adecuado o responder sin respaldo. El proyecto explora si una base de conocimiento y agentes especializados ayudan a preparar borradores verificables. <b>El caso es simulado:</b> no se estudió una empresa real, no se midió ahorro de tiempo real y la aplicación no atiende clientes externos.")
 sub("Antecedentes y continuidad")
@@ -267,6 +267,7 @@ table(["ID", "Requisito", "Estado / verificación"], [
     ["R4", "Bloquear pedidos de secretos y exigir intervención humana.", "Implementado con reglas deterministas y pruebas; calidad del borrador no garantizada."],
     ["R5", "Aprobar, editar o rechazar una única vez.", "Implementado; H5 registra ejemplos de los tres tipos y caso 409."],
     ["R6", "Reproducirlo en otra Windows.", "Preparación automatizada y guía para la netbook destino."],
+    ["R7", "Consultar pedidos y dialogar en dos pantallas.", "Seguimiento simulado, chat persistente, fotos y bandeja de revisión."],
     ["R7", "Conversar y corregir respuestas.", "Chat persistente y rectificaciones con historial; pruebas de ambas pantallas."],
 ], [30, 242, CW - 272], small=True)
 
@@ -282,21 +283,21 @@ bullet("Medir recuperación y comportamiento de punta a punta con casos fijados 
 bullet("Preparar una instalación autónoma en otra computadora Windows, sin depender de la PC original.")
 sub("Qué incluye y qué queda fuera")
 table(["Incluido en esta entrega", "Fuera del alcance actual"], [
-    ["API FastAPI, dos pantallas Streamlit, chat persistente, datos ficticios, Ollama local, KB, trazas, revisión y scripts de instalación.", "Clientes reales, integración con correo/WhatsApp o CRM, respuesta automática, autenticación multiusuario, despliegue público, Docker o AWS."],
+    ["API FastAPI, dos pantallas Streamlit, chat persistente, pedidos y entregas simuladas, respuesta automática acotada, Ollama local, KB, trazas, revisión y scripts de instalación.", "Clientes reales, integración con correo/WhatsApp o CRM, autenticación multiusuario, despliegue público, Docker o AWS."],
     ["Pruebas de código y evaluaciones H5 y de recuperación con limitaciones explícitas.", "Promesa de calidad para producción, SLA de empresa real y seguridad de un servicio público."],
 ], [CW / 2, CW / 2])
 sub("Criterios de aceptación de la entrega")
 para("Se considera demostrable el alcance si una instalación local permite crear un ticket ficticio, ver la propuesta y los documentos consultados, guardar una revisión humana y consultar la traza; si los errores de servicio e insumos inválidos tienen respuesta controlada; y si se entregan código, instrucciones, datos de prueba y resultados medidos. <b>Que la IA produzca respuestas correctas para cualquier caso no es un criterio que el prototipo haya alcanzado.</b>")
-para("En el chat de clientes, una propuesta aparece solo tras aprobarla o editarla el operador. También puede responder directamente. Todo permanece en esa computadora y no se transmite a un canal externo.")
+para("En el chat, las preguntas sencillas sobre un pedido o un producto reciben una respuesta automática basada en la base ficticia. Las propuestas del modelo para casos complejos solo aparecen tras aprobarlas o editarlas el operador. Todo permanece en esa computadora y no se transmite a un canal externo.")
 
 section("3. Recursos, viabilidad y riesgos", new_page=True)
 sub("Recursos usados")
 table(["Recurso", "Uso y dependencia"], [
     ["Windows 64 bits + Python 3.11", "Ejecución de API, scripts, pruebas y panel. Biblioteca fijada en requirements.txt."],
-    ["PostgreSQL 18, puerto 5432", "Almacenamiento relacional local de doce tablas; contraseña ingresada en terminal."],
+    ["PostgreSQL 18, puerto 5432", "Almacenamiento relacional local de catorce tablas; contraseña ingresada en terminal."],
     ["Ollama + qwen2.5:3b", "Inferencia local. Qwen2.5:3b es el modelo; Ollama es el programa que lo ejecuta. Descarga inicial aproximada de 1,9 GB."],
     ["FastAPI + Uvicorn", "Servicios HTTP locales, validación de solicitudes y documentación /docs."],
-    ["Streamlit", "Pantallas de cliente y soporte: catálogo, chat, análisis, revisión y simulación."],
+    ["Streamlit", "Pantallas de cliente y soporte: tienda, pedidos, chat y bandeja de revisión."],
     ["Git y repositorio GitHub", "Control de versiones y entrega del código; no son necesarios para usar el ZIP en la netbook."],
 ], [144, CW - 144])
 para("La solución es viable como demostración local con espacio libre suficiente y recursos para el modelo. En la netbook de destino se informaron 16 GB de RAM, CPU AMD Ryzen 5 5600H y aproximadamente 299 GB libres; esto orienta la preparación, pero el rendimiento del modelo aún debe comprobarse allí. No se estiman costos monetarios porque no se contrataron servicios pagos para el prototipo.")
@@ -314,8 +315,8 @@ para("Clientes, tickets y documentos de demostración son ficticios. No se deben
 section("4. Diseño y desarrollo del agente", new_page=True)
 sub("Arquitectura y recorrido de una consulta")
 story.append(Pipeline())
-story.append(p("Figura 1. Coordinación secuencial de los componentes. La persona cierra el proceso.", "CaptionCustom"))
-para("El panel envía la solicitud a la API. FastAPI consulta PostgreSQL y llama a <b>analysis.py</b>. Primero el agente de <b>triage</b> clasifica la consulta y extrae faltantes. El agente de <b>conocimiento</b> elige un modo de búsqueda; <b>knowledge_adapter.py</b> usa <b>retrieval.py</b> para recuperar documentos. El <b>borrador</b> redacta texto, preguntas y citas usando esa evidencia. El <b>supervisor</b> emite una decisión; después, un filtro determinista verifica seguridad y consistencia. La ejecución y su traza se guardan en PostgreSQL. Finalmente el operador revisa el resultado en Streamlit.")
+story.append(p("Figura 1. Ruta de casos con IA. Las preguntas simples se resuelven antes con datos del pedido o catálogo.", "CaptionCustom"))
+para("El cliente escribe en el chat. FastAPI consulta solo el pedido vinculado o la ficha pública pertinente. <b>tienda_respuestas.py</b> contesta de forma automática únicamente preguntas sencillas comprobables, como precio o fecha estimada ficticia. Un producto dañado recibe una solicitud de foto y queda abierto. Los demás casos preparan un borrador privado con <b>analysis.py</b>: triage, elección de búsqueda, recuperación de documentos, borrador y supervisión. Un filtro determinista comprueba secretos y citas. La ejecución y su traza se guardan en PostgreSQL; el operador decide qué publicar en Streamlit.")
 sub("Contratos y persistencia")
 table(["Componente", "Entrada → salida / función"], [
     ["API y pantallas", "Ticket y mensajes → consulta HTTP, chat y acción del operador. Endpoints de salud, casos, análisis, ejecución y revisión."],
@@ -329,7 +330,7 @@ para("Se separaron cuatro tareas del modelo para que clasificación, recuperaci�
 
 section("4.1 Datos, fuentes y recuperación", new_page=True)
 sub("Modelo de datos")
-para("El esquema <b>schema.sql</b> contiene doce tablas para clientes, tickets, eventos, documentos, relaciones, ejecuciones, revisiones, productos, pedidos, reclamos, correcciones y mensajes. Las claves foráneas enlazan casos, decisiones y conversación. Las trazas permiten reconstruir qué propuso el sistema. Los documentos de conocimiento siguen la forma KB-###.")
+para("El esquema <b>schema.sql</b> contiene catorce tablas para clientes, tickets, eventos, documentos, relaciones, ejecuciones, revisiones, productos, pedidos, reclamos, correcciones, mensajes, fotos y preparación de borradores. Cada pedido guarda una fecha estimada ficticia. Las claves foráneas enlazan casos, decisiones y conversación. Los documentos de conocimiento siguen la forma KB-###.")
 table(["Conjunto", "Origen y volumen", "Uso y límite"], [
     ["Muestra inicial", "bootstrap.py: 3 clientes, 6 tickets y 18 eventos ficticios.", "Permite abrir el panel después de instalar, sin datos empresariales."],
     ["Conjunto ampliado", "generar_datos.py: hasta 500 clientes, 20.000 tickets y 60.000 eventos.", "Sirve para volumen y EDA; frases repetitivas, sin validez externa."],
@@ -358,7 +359,7 @@ sub("Elecciones relevantes")
 bullet("PostgreSQL aporta relaciones, integridad y consultas necesarias para tickets y revisiones; la DB local no se incluye en Git.")
 bullet("Ollama evita depender de una API remota para la demostración, con el costo de instalar el modelo y exigir hardware local.")
 bullet("FastAPI separa servicio y presentación; Streamlit ofrece una interfaz rápida para un prototipo educativo.")
-bullet("El chat de reclamos conserva mensajes y usa el contexto reciente al analizar; la sección Simulación sigue creando tickets independientes para practicar.")
+bullet("El chat conserva mensajes y usa contexto reciente. La tienda muestra tres cuentas de demostración; los 500 clientes sintéticos quedan para pruebas de volumen. Las fotos se recodifican sin metadatos antes de guardarse y no se envían al modelo.")
 
 section("5. Pruebas y resultados", new_page=True)
 sub("Plan y fuentes de verificación")
@@ -371,7 +372,7 @@ table(["Escenario esperado", "Resultado observado", "Evidencia / observación"],
     ["Falla de servicios / salida", "503 si modelo/KB no están disponibles; 502 ante salida inválida. También se observó 409 y 422.", "docs/pruebas.md y capturas; 502/503 verifican código y mensaje, no conteo de filas antes/después."],
 ], [141, 167, CW - 308], small=True)
 sub("Pruebas del código actual")
-para("El 25/11/2026 se ejecutó <b>python -m unittest discover -s . -p 'test_*.py' -q</b> con el entorno Python del proyecto: <b>63 pruebas correctas</b>. Cubren contratos, seguridad, KB, recuperación, API y las dos pantallas de chat. Además, una prueba aislada con PostgreSQL comprobó mensajes, revisión, propuesta desactualizada y rectificaciones. Ollama real no se reevaluó con estos cambios.")
+para("El 27/11/2026 se ejecutó <b>python -m unittest discover -s . -p 'test_*.py' -q</b> con el entorno Python del proyecto: <b>69 pruebas correctas</b>. Cubren contratos, seguridad, KB, recuperación, API y las dos pantallas. Una base PostgreSQL aislada verificó pedido, fecha estimada, respuesta automática, reclamo por daño, foto y propuesta privada; también se probó la migración desde el esquema anterior. Ollama real no se reevaluó con estos cambios; las respuestas generativas siguen sujetas a revisión.")
 
 section("5.1 Indicadores cuantitativos", new_page=True)
 sub("Evaluación H5 de veinte tickets")
@@ -427,8 +428,8 @@ table(["Orden", "Acción", "Comprobación"], [
     ["1", "Instalar los tres programas oficiales. Mantener PostgreSQL en puerto 5432 y recordar la contraseña local de postgres.", "python/py -3.11 --version, Ollama disponible y servidor PostgreSQL iniciado."],
     ["2", "Extraer ZIP. Ejecutar 01_PREPARAR_NETBOOK.cmd: crea entorno, instala requisitos, carga muestra y KB, descarga qwen2.5:3b.", "Mensaje ‘Preparacion terminada’; sin duplicar datos al repetir."],
     ["3", "Ejecutar 02_INICIAR_API.cmd y dejar la ventana abierta. Abrir 127.0.0.1:8000/health.", "‘estado’: ‘ok’ y ‘base’: ‘conectada’."],
-    ["4", "Ejecutar 03_ABRIR_PANEL.cmd y abrir 127.0.0.1:8501.", "Panel con Resumen, Tickets, Análisis y Simulación."],
-    ["5", "Crear consulta ficticia y pedir propuesta; revisar, editar/aprobar/rechazar con motivo.", "Resultado visible en el panel y revisión guardada localmente."],
+    ["4", "Ejecutar 03_ABRIR_PANEL.cmd y 04_ABRIR_CLIENTE.cmd.", "Soporte en 127.0.0.1:8501 y cliente en 127.0.0.1:8502."],
+    ["5", "Comprar ficticiamente, consultar el envío o abrir un reclamo con foto.", "Respuesta simple automática o borrador privado y revisión de soporte."],
 ], [38, 314, CW - 352], small=True)
 para("El ZIP no contiene la base de datos de la PC original, contraseñas, entorno virtual ni pesos del modelo. Su preparación crea una base nueva con muestra ficticia: los tickets y revisiones anteriores no se trasladan. El paso a paso completo y la solución de problemas están en <b>LEEME_NETBOOK.md</b>. El curso no exige Docker ni AWS para esta demostración, y la entrega actual no los utiliza.")
 sub("Fuentes oficiales para instalar y comprender las herramientas")

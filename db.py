@@ -337,7 +337,11 @@ class SupportOpsDB:
         consulta = """
             SELECT p.id, p.cliente_id, c.nombre AS cliente, p.producto_id,
                    pr.nombre AS producto, p.cantidad, p.precio_unitario,
-                   p.cantidad * p.precio_unitario AS total, p.estado, p.creado
+                   p.cantidad * p.precio_unitario AS total, p.estado, p.creado,
+                   p.entrega_estimada,
+                   CASE WHEN now() >= p.entrega_estimada THEN 'entregado'
+                        WHEN now() >= p.creado + INTERVAL '1 day' THEN 'en camino'
+                        ELSE 'en preparación' END AS estado_envio
             FROM pedidos AS p
             JOIN clientes AS c ON c.id = p.cliente_id
             JOIN productos AS pr ON pr.id = p.producto_id
@@ -374,7 +378,7 @@ class SupportOpsDB:
                 """
                 INSERT INTO pedidos (cliente_id, producto_id, cantidad, precio_unitario)
                 VALUES (%s, %s, %s, %s)
-                RETURNING id, estado, creado
+                RETURNING id, estado, creado, entrega_estimada
                 """,
                 (cliente_id, producto_id, cantidad, producto["precio"]),
             )
@@ -384,6 +388,7 @@ class SupportOpsDB:
                 "producto_id": producto_id, "producto": producto["nombre"],
                 "cantidad": cantidad, "precio_unitario": producto["precio"],
                 "total": cantidad * producto["precio"],
+                "estado_envio": "en preparación",
             }
 
     def crear_reclamo(self, cliente_id: int, texto: str,
@@ -463,7 +468,11 @@ class SupportOpsDB:
                 """
                 SELECT r.producto_id, pr.nombre AS producto,
                        pr.descripcion, pr.precio, pr.stock,
-                       r.pedido_id, p.estado AS estado_pedido, p.cantidad
+                       r.pedido_id, p.estado AS estado_pedido, p.cantidad,
+                       p.entrega_estimada,
+                       CASE WHEN now() >= p.entrega_estimada THEN 'entregado'
+                            WHEN now() >= p.creado + INTERVAL '1 day' THEN 'en camino'
+                            ELSE 'en preparación' END AS estado_envio
                 FROM reclamos AS r
                 LEFT JOIN productos AS pr ON pr.id = r.producto_id
                 LEFT JOIN pedidos AS p ON p.id = r.pedido_id
@@ -477,6 +486,100 @@ class SupportOpsDB:
         with self.conectar() as conexion, conexion.cursor() as cursor:
             cursor.execute("SELECT 1 FROM reclamos WHERE ticket_id = %s", (ticket_id,))
             return cursor.fetchone() is not None
+
+    def pedido_del_reclamo(self, ticket_id: int):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute(
+                """SELECT p.id, pr.nombre AS producto, p.entrega_estimada,
+                          CASE WHEN now() >= p.entrega_estimada THEN 'entregado'
+                               WHEN now() >= p.creado + INTERVAL '1 day' THEN 'en camino'
+                               ELSE 'en preparación' END AS estado_envio
+                   FROM reclamos r JOIN tickets t ON t.id = r.ticket_id
+                   JOIN pedidos p ON p.id = r.pedido_id AND p.cliente_id = t.cliente_id
+                   JOIN productos pr ON pr.id = p.producto_id
+                   WHERE r.ticket_id = %s""", (ticket_id,)
+            )
+            return cursor.fetchone()
+
+    def fotos_reclamo(self, ticket_id: int, cliente_id: int | None = None):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute("SELECT t.cliente_id FROM reclamos r JOIN tickets t "
+                           "ON t.id = r.ticket_id WHERE r.ticket_id = %s", (ticket_id,))
+            fila = cursor.fetchone()
+            if fila is None or (cliente_id is not None and fila["cliente_id"] != cliente_id):
+                return None
+            cursor.execute("SELECT id, mime, creado FROM fotos_reclamo "
+                           "WHERE ticket_id = %s ORDER BY id", (ticket_id,))
+            return cursor.fetchall()
+
+    def guardar_foto_reclamo(self, ticket_id: int, cliente_id: int, mime: str,
+                             contenido: bytes):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM reclamos r JOIN tickets t ON t.id = r.ticket_id "
+                           "WHERE r.ticket_id = %s AND t.cliente_id = %s FOR UPDATE OF t",
+                           (ticket_id, cliente_id))
+            if cursor.fetchone() is None:
+                return None
+            cursor.execute("INSERT INTO fotos_reclamo "
+                           "(ticket_id, cliente_id, mime, datos) VALUES (%s, %s, %s, %s) "
+                           "RETURNING id, ticket_id, mime, creado",
+                           (ticket_id, cliente_id, mime, contenido))
+            foto = cursor.fetchone()
+            cursor.execute("INSERT INTO mensajes_reclamo (ticket_id, autor, texto) "
+                           "VALUES (%s, 'cliente', 'Adjunté una foto del producto.')",
+                           (ticket_id,))
+            self._registrar_estado_ticket(cursor, ticket_id, False, "foto_cliente")
+            return foto
+
+    def obtener_foto_reclamo(self, ticket_id: int, foto_id: int,
+                             cliente_id: int | None = None):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute("SELECT f.mime, f.datos FROM fotos_reclamo f "
+                           "JOIN tickets t ON t.id = f.ticket_id "
+                           "WHERE f.ticket_id = %s AND f.id = %s "
+                           "AND (%s::bigint IS NULL OR t.cliente_id = %s)",
+                           (ticket_id, foto_id, cliente_id, cliente_id))
+            return cursor.fetchone()
+
+    def publicar_automatica(self, ticket_id: int, mensaje_id: int, texto: str,
+                            resuelto: bool):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute("SELECT id FROM mensajes_reclamo WHERE ticket_id = %s "
+                           "ORDER BY id DESC LIMIT 1 FOR UPDATE", (ticket_id,))
+            ultimo = cursor.fetchone()
+            if not ultimo or ultimo["id"] != mensaje_id:
+                return None
+            cursor.execute("INSERT INTO mensajes_reclamo (ticket_id, autor, texto, tipo) "
+                           "VALUES (%s, 'soporte', %s, 'automatica') "
+                           "RETURNING id, ticket_id, autor, texto, creado, tipo",
+                           (ticket_id, texto))
+            mensaje = cursor.fetchone()
+            self._registrar_estado_ticket(cursor, ticket_id, resuelto, "respuesta_automatica")
+            return mensaje
+
+    def registrar_borrador_pendiente(self, ticket_id: int, mensaje_id: int):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute("INSERT INTO borradores_pendientes "
+                           "(ticket_id, mensaje_id, estado) VALUES (%s, %s, 'preparando') "
+                           "ON CONFLICT (mensaje_id) DO NOTHING", (ticket_id, mensaje_id))
+
+    def terminar_borrador_pendiente(self, mensaje_id: int, ejecucion_id: int | None,
+                                    detalle: str = ""):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute("UPDATE borradores_pendientes SET estado = %s, "
+                           "ejecucion_id = %s, detalle = %s, actualizado = now() "
+                           "WHERE mensaje_id = %s",
+                           ("listo" if ejecucion_id else "error", ejecucion_id,
+                            detalle[:200], mensaje_id))
+
+    def estado_borrador(self, ticket_id: int):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute("SELECT b.estado, b.ejecucion_id, b.detalle "
+                           "FROM mensajes_reclamo m LEFT JOIN borradores_pendientes b "
+                           "ON b.mensaje_id = m.id WHERE m.ticket_id = %s "
+                           "AND m.autor = 'cliente' ORDER BY m.id DESC LIMIT 1",
+                           (ticket_id,))
+            return cursor.fetchone()
 
     def listar_mensajes_reclamo(self, ticket_id: int, cliente_id: int | None = None):
         with self.conectar() as conexion, conexion.cursor() as cursor:

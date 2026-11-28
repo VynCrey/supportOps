@@ -5,7 +5,14 @@ import streamlit as st
 from api_client import APIError, API_URL, get, post
 
 
-st.set_page_config(page_title="SupportOps | Soporte", page_icon=":material/support_agent:", layout="centered")
+st.set_page_config(page_title="SupportOps | Soporte", page_icon=":material/support_agent:", layout="wide")
+st.html("""<style>
+.stApp {background: #f7f9f9;}
+.block-container {max-width: 1180px; padding-top: 2rem;}
+[data-testid="stChatMessage"] {border: 1px solid #dce7e5; border-radius: 16px;
+    background: white; margin-bottom: .45rem;}
+h1, h2, h3 {color: #173d44;}
+</style>""")
 
 
 def mostrar_error(error: APIError):
@@ -418,8 +425,8 @@ def productos_soporte():
 
 
 def reclamos_soporte():
-    st.header("Conversaciones con clientes")
-    st.caption("Leé los mensajes y respondé directamente, o pedí una propuesta a la IA para revisarla.")
+    st.header("Bandeja de conversaciones")
+    st.caption("El asistente responde consultas sencillas. Revisá las demás propuestas aquí antes de publicarlas.")
     st.button("Actualizar conversaciones", icon=":material/refresh:")
     try:
         reclamos = get("/reclamos")["reclamos"]
@@ -448,6 +455,7 @@ def reclamos_soporte():
     )
     try:
         mensajes = get(f"/reclamos/{elegido}/mensajes")["mensajes"]
+        fotos = get(f"/reclamos/{elegido}/fotos")["fotos"]
     except APIError as error:
         mostrar_error(error)
         return
@@ -459,9 +467,12 @@ def reclamos_soporte():
         ):
             st.write(mensaje["texto"])
             st.caption(reclamo["cliente"] if mensaje["autor"] == "cliente" else
-                       ("Soporte · rectificada" if mensaje["tipo"] == "rectificacion"
+                       ("Asistente · automática" if mensaje["tipo"] == "automatica" else
+                        "Soporte · rectificada" if mensaje["tipo"] == "rectificacion"
                         else "Soporte"))
-            if mensaje["autor"] == "soporte" and mensaje["tipo"] in ("mensaje", "rectificacion"):
+            if mensaje["autor"] == "soporte" and mensaje["tipo"] in (
+                "mensaje", "rectificacion", "automatica"
+            ):
                 with st.expander("Corregir este mensaje"):
                     with st.form(f"rectificar_mensaje_{mensaje['id']}"):
                         texto_nuevo = st.text_area("Respuesta corregida", value=mensaje["texto"])
@@ -476,6 +487,49 @@ def reclamos_soporte():
                             mostrar_error(error)
                         else:
                             st.rerun()
+    for foto in fotos:
+        st.image(f"{API_URL}/reclamos/{elegido}/fotos/{foto['id']}",
+                 caption="Foto enviada por el cliente ficticio", width=240)
+
+    try:
+        propuesta = get(f"/reclamos/{elegido}/propuesta")
+    except APIError as error:
+        mostrar_error(error)
+        propuesta = {}
+    if propuesta.get("estado") == "preparando":
+        st.info("La propuesta para el último mensaje se está preparando. Actualizá en unos segundos.")
+    elif propuesta.get("estado") == "error":
+        st.warning(propuesta.get("detalle") or "No se pudo preparar la propuesta.")
+    elif propuesta.get("estado") == "listo" and propuesta.get("ejecucion_id"):
+        ejecucion = get(f"/ejecuciones/{propuesta['ejecucion_id']}")
+        resultado = ejecucion["resultado"]
+        with st.container(border=True):
+            st.subheader("Propuesta para revisar")
+            st.write(resultado.get("borrador", {}).get("texto", ""))
+            st.caption("Documentos: " +
+                       (", ".join(resultado.get("borrador", {}).get("citas", [])) or "ninguno"))
+            st.caption("Control: " + resultado.get("supervision", {}).get("decision", "revisar"))
+            if not ejecucion.get("revision"):
+                bloqueado = resultado.get("supervision", {}).get("decision") == "bloquear"
+                opciones = ["rechazar"] if bloqueado else ["aprobar", "editar", "rechazar"]
+                with st.form(f"revision_chat_{propuesta['ejecucion_id']}"):
+                    decision = st.segmented_control("Tu decisión", opciones,
+                                                    default=opciones[0])
+                    texto_final = st.text_area("Respuesta corregida (si editás)")
+                    motivo = st.text_input("Motivo de la decisión")
+                    guardar = st.form_submit_button("Guardar y publicar decisión", type="primary")
+                if guardar:
+                    try:
+                        post(f"/ejecuciones/{propuesta['ejecucion_id']}/revision", {
+                            "decision": decision, "texto_final": texto_final,
+                            "motivo": motivo,
+                        })
+                    except APIError as error:
+                        mostrar_error(error)
+                    else:
+                        st.rerun()
+            else:
+                st.success("Esta propuesta ya fue revisada.")
     with st.expander("Historial de cambios del chat"):
         try:
             historial = get(f"/reclamos/{elegido}/mensajes/historial")["mensajes"]
@@ -489,7 +543,7 @@ def reclamos_soporte():
                  for m in historial],
                 hide_index=True,
             )
-    if st.button("Preparar propuesta con IA", type="primary"):
+    if st.button("Volver a preparar propuesta"):
         with st.spinner("Ollama está preparando una propuesta para que la revises..."):
             try:
                 nuevo = post(f"/tickets/{elegido}/analizar", timeout=180)
@@ -513,14 +567,16 @@ def reclamos_soporte():
 
 
 st.title("SupportOps · Soporte")
-st.caption("Tienda Faro ficticia · respondé directamente o revisá una propuesta de Ollama")
+st.caption("Tienda Faro ficticia · bandeja de atención con asistente local")
 if st.session_state.pop("ir_analisis", False):
     st.session_state.seccion = "Análisis y revisión"
+opciones_seccion = ["Bandeja", "Productos y pedidos", "Resumen", "Análisis y revisión", "Tickets"]
+if st.session_state.get("seccion") not in opciones_seccion:
+    st.session_state.seccion = "Bandeja"
 with st.sidebar:
     seccion = st.radio(
         "Sección",
-        ["Resumen", "Conversaciones", "Productos y pedidos", "Tickets",
-         "Análisis y revisión", "Simulación"],
+        opciones_seccion,
         key="seccion",
     )
     st.caption(f"API: {API_URL}")
@@ -536,11 +592,11 @@ if seccion == "Resumen":
     resumen()
 elif seccion == "Tickets":
     tickets()
-elif seccion == "Conversaciones":
+elif seccion == "Bandeja":
     reclamos_soporte()
 elif seccion == "Productos y pedidos":
     productos_soporte()
 elif seccion == "Análisis y revisión":
     analisis()
 else:
-    simulacion()
+    reclamos_soporte()
