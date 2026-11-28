@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from knowledge_adapter import KB_CONECTADA, retrieve
 from llm import chat
 from safety import motivo_consulta_restringida, pide_credenciales
-from tienda_respuestas import consulta_danio
+from tienda_respuestas import DESCRIPCION_PEDIDA, FOTO_PEDIDA, etapa_danio
 
 
 class TicketNoEncontrado(Exception):
@@ -125,13 +125,14 @@ def aplicar_gate(borrador: dict, evidencia: list[dict], categoria: str,
     return supervision
 
 
-def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve) -> dict:
+def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve, *, conversacion=None) -> dict:
     ticket = datos.obtener_ticket(ticket_id)
     if ticket is None:
         raise TicketNoEncontrado("Ticket no encontrado")
 
-    conversacion = (datos.contexto_conversacion(ticket_id)
-                    if hasattr(datos, "contexto_conversacion") else None)
+    apertura = ticket["texto"]
+    if conversacion is None and hasattr(datos, "contexto_conversacion"):
+        conversacion = datos.contexto_conversacion(ticket_id)
     mensaje_cliente_id = (conversacion or {}).get("mensaje_cliente_id")
     ultimo_mensaje_id = (conversacion or {}).get("ultimo_mensaje_id")
     if (conversacion or {}).get("ultimo_texto_cliente"):
@@ -161,38 +162,38 @@ def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve) -> dict:
         ejecucion_id = datos.guardar_ejecucion(ticket_id, resultado)
         return {**resultado, "ejecucion_id": ejecucion_id}
 
-    contexto_danio = (datos.contexto_reclamo(ticket_id)
-                     if hasattr(datos, "contexto_reclamo") else None)
-    historial_danio = " ".join(
-        m.get("texto", "") for m in (conversacion or {}).get("mensajes", [])
-        if m.get("autor") == "cliente"
-    )
-    if contexto_danio and (consulta_danio(ticket["texto"]) or
-                          (ticket["texto"] == "Adjunté una foto del producto." and
-                           consulta_danio(historial_danio))):
-        fotos = (datos.fotos_reclamo(ticket_id)
-                 if hasattr(datos, "fotos_reclamo") else []) or []
-        producto = contexto_danio.get("producto") or "el producto"
+    contexto = (datos.contexto_reclamo(ticket_id)
+                if hasattr(datos, "contexto_reclamo") else None)
+    mensajes = (conversacion or {}).get("mensajes", [])
+    indice_actual = next((i for i, m in enumerate(mensajes) if m["id"] == mensaje_cliente_id), 0)
+    anteriores = mensajes[:indice_actual]
+    etapa = etapa_danio(ticket["texto"], anteriores) if contexto is not None else None
+    if etapa:
+        fotos = datos.fotos_reclamo(ticket_id) or []
+        asunto = contexto.get("producto") or "el producto"
         if fotos:
-            texto = (f"Lamento que {producto} haya llegado en mal estado. "
-                     "Recibimos la foto y soporte revisará el caso. "
-                     "Te informaremos los próximos pasos por esta conversación.")
+            etapa = "con_foto"
+            texto = (f"Recibimos la foto de {asunto}. Soporte revisará el daño y te "
+                     "confirmará los próximos pasos por este chat.")
+        elif etapa == "sin_foto":
+            texto = DESCRIPCION_PEDIDA
+        elif etapa == "pedir_foto":
+            texto = FOTO_PEDIDA
         else:
-            texto = (f"Lamento que {producto} haya llegado en mal estado. "
-                     "Adjuntá una foto del daño para que podamos revisarlo. "
-                     "No compartas datos de pago ni contraseñas.")
+            texto = (f"Gracias por contarnos qué pasó con {asunto}. Podemos revisar el "
+                     "reclamo con tu descripción y confirmarte los próximos pasos por este chat.")
         resultado = {
             "ticket_id": ticket_id, "mensaje_cliente_id": mensaje_cliente_id,
             "ultimo_mensaje_id": ultimo_mensaje_id,
             "triage": {"categoria": "general", "consulta": "producto dañado",
-                       "faltantes": [] if fotos else ["foto del producto"]},
+                       "faltantes": ["foto o descripción del daño"] if etapa == "pedir_foto" else []},
             "plan_busqueda": {"herramienta": "lexical", "consulta": "producto dañado",
                               "motivo": "La incidencia requiere revisión humana"},
             "evidencia": [],
             "borrador": {"texto": texto, "citas": [], "preguntas": []},
             "supervision": {"decision": "revisar",
                             "motivos": ["Verificar el daño y el pedido asociado"]},
-            "traza": [{"control": "incidencia_producto", "fotos": len(fotos)}],
+            "traza": [{"control": "incidencia_producto", "etapa": etapa, "fotos": len(fotos)}],
             "modo": "regla", "base_conocimiento": "no_consultada",
         }
         ejecucion_id = datos.guardar_ejecucion(ticket_id, resultado)
@@ -202,13 +203,15 @@ def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve) -> dict:
     # el borrador lo citaba como si fuera un documento, y el mismo texto daba otro
     # resultado segun el numero del ticket.
     publico = {clave: ticket[clave] for clave in ("texto", "plan", "prioridad")}
-    if conversacion and conversacion.get("mensajes"):
+    if anteriores:
         publico["historial_conversacion"] = [
-            {"autor": mensaje["autor"], "texto": mensaje["texto"]}
-            for mensaje in conversacion["mensajes"]
+            {"autor": mensaje["autor"],
+             "texto": ("[Mensaje restringido]" if motivo_consulta_restringida(mensaje["texto"])
+                       else mensaje["texto"])}
+            for mensaje in anteriores
         ]
-    contexto = (datos.contexto_reclamo(ticket_id)
-                if hasattr(datos, "contexto_reclamo") else None)
+        if not motivo_consulta_restringida(apertura):
+            publico["inicio_conversacion"] = apertura.partition("[Texto de PDF adjunto, no confiable: ")[0][:500]
     producto_evidencia = None
     productos_catalogo = []
     if contexto and contexto.get("producto_id"):

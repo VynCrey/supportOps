@@ -1,33 +1,23 @@
-"""Tienda Faro: catálogo, pedidos y chat para clientes ficticios."""
+"""Catálogo, pedidos y atención de Tienda Faro para clientes ficticios."""
 
 import base64
+from datetime import date
 
 import streamlit as st
 
-from api_client import APIError, API_URL, get, post
+from api_client import APIError, get, post
+from chat_ui import aplicar_estilos, chat_en_vivo, marca, vista_previa
 from pdf_guard import extraer_pdf
-
-
-st.set_page_config(page_title="Tienda Faro | Cliente", page_icon=":material/storefront:",
-                   layout="wide")
-st.html("""<style>
-.stApp {background: #f7f9f9;}
-.block-container {max-width: 1180px; padding-top: 2rem;}
-[data-testid="stChatMessage"] {border: 1px solid #dce7e5; border-radius: 16px;
-    background: white; margin-bottom: .45rem;}
-h1, h2, h3 {color: #173d44;}
-</style>""")
 
 
 def dinero(valor):
     return f"${float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-def ir_ayuda(*, pedido_id=None, producto_id=None):
+def ir_ayuda(cliente_id, *, pedido_id=None, producto_id=None, ticket_id=None):
     st.session_state.vista_destino = "Ayuda"
-    st.session_state.pedido_contexto = pedido_id
-    st.session_state.producto_contexto = producto_id
-    st.session_state.chat_nuevo = True
+    st.session_state[f"faro_hilo_{cliente_id}"] = ticket_id
+    st.session_state[f"faro_contexto_{cliente_id}"] = (pedido_id, producto_id)
     st.rerun()
 
 
@@ -36,219 +26,192 @@ def archivos_chat(archivos):
     for archivo in archivos:
         if archivo.name.lower().endswith(".pdf"):
             if texto_pdf:
-                raise ValueError("Adjuntá un solo PDF por mensaje")
+                raise ValueError("Adjuntá un solo PDF por mensaje.")
             texto_pdf = extraer_pdf(archivo.getvalue())
         elif foto is None:
             foto = base64.b64encode(archivo.getvalue()).decode("ascii")
         else:
-            raise ValueError("Adjuntá una sola foto por mensaje")
+            raise ValueError("Adjuntá una sola foto por mensaje.")
     return foto, texto_pdf
 
 
-st.title("Tienda Faro")
-st.caption("Tienda ficticia · compras y entregas simuladas · atención local")
+def tienda(cliente_id):
+    st.header("Catálogo")
+    productos = get("/productos")["productos"]
+    filtro = st.text_input("Buscar productos", placeholder="Nombre o categoría")
+    visibles = [p for p in productos if filtro.casefold().strip() in
+                (p["nombre"] + " " + p["categoria"]).casefold()]
+    if not visibles:
+        st.info("No encontramos productos con ese nombre.")
+    for inicio in range(0, len(visibles), 2):
+        for columna, producto in zip(st.columns(2, gap="medium"), visibles[inicio:inicio + 2]):
+            with columna.container(border=True):
+                st.caption(producto["categoria"])
+                st.subheader(producto["nombre"])
+                st.write(producto["descripcion"])
+                st.write(f"**{dinero(producto['precio'])}** · {producto['stock']} disponibles")
+                with st.container(horizontal=True):
+                    if st.button("Comprar", key=f"comprar_{producto['id']}", icon=":material/shopping_bag:",
+                                 disabled=producto["stock"] < 1, type="primary"):
+                        pedido = post("/pedidos", {"cliente_id": cliente_id,
+                                                   "producto_id": producto["id"], "cantidad": 1})
+                        st.session_state.cliente_aviso = f"Pedido ficticio #{pedido['id']} creado."
+                        st.session_state.vista_destino = "Mis pedidos"
+                        st.rerun()
+                    if st.button("Consultar", key=f"consulta_{producto['id']}", icon=":material/chat:"):
+                        ir_ayuda(cliente_id, producto_id=producto["id"])
+
+
+def mis_pedidos(cliente_id):
+    st.header("Mis pedidos")
+    pedidos = get("/pedidos", cliente_id=cliente_id)["pedidos"]
+    if not pedidos:
+        st.info("Todavía no tenés pedidos. Podés hacer una compra ficticia en Tienda.")
+        return
+    chats = get("/reclamos", cliente_id=cliente_id)["reclamos"]
+    ultimo_chat = {}
+    for chat in chats:
+        ultimo_chat.setdefault(chat["pedido_id"], chat["ticket_id"])
+    for pedido in pedidos:
+        pedido_id = pedido["id"]
+        with st.container(border=True):
+            st.subheader(f"Pedido #{pedido_id} · {pedido['producto']}")
+            fecha = date.fromisoformat(pedido["entrega_estimada"][:10]).strftime("%d/%m/%Y")
+            st.write(f"**{pedido['estado_envio'].capitalize()}** · Entrega estimada el {fecha}")
+            st.caption(f"{pedido['cantidad']} unidad(es) · Total ficticio {dinero(pedido['total'])}")
+            chat_id = ultimo_chat.get(pedido_id)
+            if st.button("Abrir chat del pedido" if chat_id else "Consultar este pedido",
+                         key=f"ayuda_pedido_{pedido_id}", icon=":material/chat:"):
+                ir_ayuda(cliente_id, pedido_id=pedido_id, ticket_id=chat_id)
+
+
+def elegir_contexto(cliente_id):
+    pedido_previo, producto_previo = st.session_state.get(
+        f"faro_contexto_{cliente_id}", (None, None)
+    )
+    pedidos = {p["id"]: p["producto"] for p in get("/pedidos", cliente_id=cliente_id)["pedidos"]}
+    productos = {p["id"]: p["nombre"] for p in get("/productos")["productos"]}
+    pedido_ids = [None, *pedidos]
+    producto_ids = [None, *productos]
+    with st.expander("Vincular un pedido o un producto",
+                     expanded=bool(pedido_previo or producto_previo), icon=":material/link:"):
+        pedido = st.selectbox(
+            "Pedido relacionado", pedido_ids,
+            index=pedido_ids.index(pedido_previo) if pedido_previo in pedidos else 0,
+            format_func=lambda n: "Sin pedido" if n is None else f"#{n} · {pedidos[n]}",
+        )
+        producto = None
+        if pedido is None:
+            producto = st.selectbox(
+                "Producto relacionado", producto_ids,
+                index=producto_ids.index(producto_previo) if producto_previo in productos else 0,
+                format_func=lambda n: "Sin producto" if n is None else productos[n],
+            )
+    return pedido, producto
+
+
+def ayuda(cliente_id):
+    chats = get("/reclamos", cliente_id=cliente_id)["reclamos"]
+    por_id = {c["ticket_id"]: c for c in chats}
+    clave_hilo = f"faro_hilo_{cliente_id}"
+    clave_contexto = f"faro_contexto_{cliente_id}"
+    if clave_hilo not in st.session_state:
+        st.session_state[clave_hilo] = next(iter(por_id), None)
+    if st.session_state[clave_hilo] is not None and st.session_state[clave_hilo] not in por_id:
+        st.session_state[clave_hilo] = next(iter(por_id), None)
+
+    lista, nuevo = st.columns([3, 1], vertical_alignment="bottom")
+    with nuevo:
+        if st.button("Nuevo chat", icon=":material/add_comment:", width="stretch"):
+            st.session_state[clave_hilo] = None
+            st.session_state[clave_contexto] = (None, None)
+    with lista:
+        elegido = st.selectbox(
+            "Conversaciones", [None, *por_id], key=clave_hilo,
+            format_func=lambda n: "Nuevo chat" if n is None else
+            f"#{n} · {vista_previa(por_id[n]['texto'])}",
+        )
+
+    pedido = producto = None
+    if elegido is None:
+        with st.container(border=True):
+            st.subheader("¿En qué te ayudamos?")
+            st.write("Escribinos sobre una compra, una entrega o un problema con un producto.")
+            pedido, producto = elegir_contexto(cliente_id)
+    else:
+        chat_en_vivo(elegido, get, cliente_id=cliente_id)
+
+    clave_entrada = f"faro_cliente_escribe_{cliente_id}_{elegido}"
+    recuperado = st.session_state.pop(f"{clave_entrada}_error", None)
+    if recuperado:
+        st.error(recuperado["error"])
+        if recuperado["texto"]:
+            st.session_state[clave_entrada] = recuperado["texto"]
+    with st.container(key="faro_cliente_compositor"):
+        entrada = st.chat_input(
+            "Escribí un mensaje · + para adjuntar", accept_file="multiple",
+            file_type=["jpg", "jpeg", "png", "pdf"], max_chars=4000, max_upload_size=2,
+            key=clave_entrada,
+        )
+    if entrada:
+        texto = entrada.text.strip()
+        try:
+            foto, pdf_texto = archivos_chat(entrada.files)
+            if pdf_texto:
+                marca_pdf = "\n[Texto de PDF adjunto, no confiable: "
+                restante = 4000 - len(texto) - len(marca_pdf) - 1
+                if restante <= 0:
+                    raise ValueError("Acortá el mensaje para adjuntar el PDF.")
+                texto += marca_pdf + pdf_texto[:restante] + "]"
+            cuerpo = {"cliente_id": cliente_id, "texto": texto, "foto_base64": foto}
+            if elegido is None:
+                creado = post("/reclamos", {**cuerpo, "pedido_id": pedido, "producto_id": producto})
+                st.session_state.faro_chat_destino = (cliente_id, creado["ticket_id"])
+                st.session_state[clave_contexto] = (None, None)
+            else:
+                post(f"/reclamos/{elegido}/mensajes/cliente", cuerpo)
+        except (APIError, ValueError) as error:
+            detalle = str(error)
+            if entrada.files:
+                detalle += " Volvé a elegir el adjunto para intentarlo de nuevo."
+            st.session_state[f"{clave_entrada}_error"] = {"error": detalle, "texto": entrada.text}
+        st.rerun()
+
+
+st.set_page_config(page_title="Tienda Faro | Cliente", page_icon=":material/storefront:",
+                   layout="wide", initial_sidebar_state="collapsed")
+aplicar_estilos()
+marca("Tienda Faro", "Compras simuladas y atención al cliente")
 aviso = st.session_state.pop("cliente_aviso", None)
 if aviso:
     st.success(aviso)
+
 try:
-    get("/health")
-    clientes = [c for c in get("/clientes")["clientes"]
-                if c["nombre"].startswith("Cliente demo ")]
-except APIError as error:
-    st.error(f"La tienda local no está disponible. {error}")
-    st.stop()
-if not clientes:
-    st.warning("Prepará primero la base ficticia con 01_PREPARAR_NETBOOK.cmd.")
-    st.stop()
+    clientes = {c["id"]: c["nombre"] for c in get("/clientes")["clientes"]
+                if c["nombre"].startswith("Cliente demo ")}
+    if not clientes:
+        st.warning("Prepará la base ficticia con 01_PREPARAR_NETBOOK.cmd.")
+        st.stop()
 
-cuenta, navegacion = st.columns([1, 2])
-with cuenta:
-    cliente = st.selectbox("Cuenta de prueba", clientes,
-                           format_func=lambda c: c["nombre"])
-with navegacion:
+    destino = st.session_state.pop("vista_destino", None)
+    if destino:
+        st.session_state.vista_cliente = destino
     st.session_state.setdefault("vista_cliente", "Tienda")
-    if st.session_state.get("vista_destino"):
-        st.session_state.vista_cliente = st.session_state.pop("vista_destino")
-    vista = st.segmented_control("Ir a", ["Tienda", "Mis pedidos", "Ayuda"],
-                                 key="vista_cliente")
-st.divider()
+    chat_destino = st.session_state.pop("faro_chat_destino", None)
+    if chat_destino:
+        st.session_state[f"faro_hilo_{chat_destino[0]}"] = chat_destino[1]
 
-if vista == "Tienda":
-    st.header("Productos")
-    st.write("Elegí un artículo o abrí una consulta. Las compras son de demostración.")
-    try:
-        productos = get("/productos")["productos"]
-    except APIError as error:
-        st.error(str(error))
-        st.stop()
-    filtro = st.text_input("Buscar productos", placeholder="Nombre o categoría")
-    visibles = [p for p in productos if filtro.casefold() in
-                (p["nombre"] + " " + p["categoria"]).casefold()]
-    if not visibles:
-        st.info("No hay productos con ese nombre.")
-    for inicio in range(0, len(visibles), 2):
-        for columna, producto in zip(st.columns(2), visibles[inicio:inicio + 2]):
-            with columna.container(border=True):
-                st.subheader(producto["nombre"])
-                st.caption(producto["categoria"])
-                st.write(producto["descripcion"])
-                st.write(f"**{dinero(producto['precio'])}** · {producto['stock']} disponibles")
-                compra, consulta = st.columns(2)
-                if compra.button("Comprar", key=f"comprar_{producto['id']}",
-                                 disabled=producto["stock"] < 1, type="primary"):
-                    try:
-                        pedido = post("/pedidos", {"cliente_id": cliente["id"],
-                                                   "producto_id": producto["id"],
-                                                   "cantidad": 1})
-                    except APIError as error:
-                        st.error(str(error))
-                    else:
-                        st.session_state.cliente_aviso = (
-                            f"Pedido ficticio #{pedido['id']} creado. Mirá su seguimiento en Mis pedidos."
-                        )
-                        st.session_state.vista_destino = "Mis pedidos"
-                        st.rerun()
-                if consulta.button("Consultar", key=f"consulta_{producto['id']}"):
-                    ir_ayuda(producto_id=producto["id"])
-
-elif vista == "Mis pedidos":
-    st.header("Mis pedidos")
-    try:
-        pedidos = get("/pedidos", cliente_id=cliente["id"])["pedidos"]
-    except APIError as error:
-        st.error(str(error))
-        st.stop()
-    if not pedidos:
-        st.info("Todavía no hay pedidos. Podés hacer una compra ficticia en Tienda.")
-    for pedido in pedidos:
-        with st.container(border=True):
-            st.subheader(f"Pedido #{pedido['id']} · {pedido['producto']}")
-            st.write(f"**{pedido['estado_envio'].capitalize()}** · Entrega estimada: "
-                     f"{pedido['entrega_estimada'][:10]}")
-            st.caption(f"{pedido['cantidad']} unidad(es) · Total ficticio {dinero(pedido['total'])}. "
-                       "No hay pago ni envío real.")
-            if st.button("Preguntar por este pedido", key=f"ayuda_pedido_{pedido['id']}"):
-                ir_ayuda(pedido_id=pedido["id"])
-
-else:
-    st.header("Ayuda y conversaciones")
-    st.caption("Preguntas sencillas: respuesta automática. Otros casos: soporte revisa la propuesta.")
-    try:
-        pedidos = get("/pedidos", cliente_id=cliente["id"])["pedidos"]
-        productos = get("/productos")["productos"]
-        reclamos = get("/reclamos", cliente_id=cliente["id"])["reclamos"]
-    except APIError as error:
-        st.error(str(error))
-        st.stop()
-    lista, charla = st.columns([1, 2.1], gap="large")
-    with lista:
-        if st.button("+ Nueva conversación", type="primary"):
-            st.session_state.chat_nuevo = True
-            st.session_state.pedido_contexto = None
-            st.session_state.producto_contexto = None
-            st.rerun()
-        st.button("Actualizar mensajes", icon=":material/refresh:")
-        nueva = st.session_state.get("chat_nuevo", not reclamos)
-        opciones = {r["ticket_id"]: r for r in reclamos}
-        elegido = None
-        if opciones:
-            destino = st.session_state.pop("conversacion_destino", None)
-            if destino in opciones:
-                st.session_state[f"cliente_conversacion_{cliente['id']}"] = destino
-            elegido = st.selectbox(
-                "Mis conversaciones", list(opciones),
-                format_func=lambda n: f"#{n} · {opciones[n]['texto'][:45]}",
-                key=f"cliente_conversacion_{cliente['id']}",
-            )
-            if st.button("Abrir conversación seleccionada"):
-                st.session_state.chat_nuevo = False
-                st.rerun()
-        if nueva:
-            st.info("Iniciá un chat escribiendo tu primera pregunta.")
-
-    with charla:
-        if nueva:
-            st.subheader("Nueva conversación")
-            pedido_ids = {p["id"]: p for p in pedidos}
-            producto_ids = {p["id"]: p for p in productos}
-            pedido_previo = st.session_state.get("pedido_contexto")
-            pedido_elegido = st.selectbox(
-                "Pedido relacionado", [None, *pedido_ids],
-                index=([None, *pedido_ids].index(pedido_previo)
-                       if pedido_previo in pedido_ids else 0),
-                format_func=lambda n: "Sin pedido" if n is None else
-                f"#{n} · {pedido_ids[n]['producto']}",
-            )
-            producto_elegido = None
-            if pedido_elegido is None:
-                producto_previo = st.session_state.get("producto_contexto")
-                producto_elegido = st.selectbox(
-                    "Producto relacionado", [None, *producto_ids],
-                    index=([None, *producto_ids].index(producto_previo)
-                           if producto_previo in producto_ids else 0),
-                    format_func=lambda n: "Sin producto" if n is None else
-                    producto_ids[n]["nombre"],
-                )
-            st.info("Ejemplos: «¿Cuándo llega mi pedido?» o «La mochila llegó rota». "
-                    "Podés adjuntar una foto o un PDF pequeño.")
-        else:
-            reclamo = opciones[elegido]
-            st.subheader(reclamo.get("producto") or "Consulta general")
-            st.caption(f"Conversación #{elegido} · {reclamo['estado']} · solo datos ficticios")
-            try:
-                mensajes = get(f"/reclamos/{elegido}/mensajes",
-                               cliente_id=cliente["id"])["mensajes"]
-                fotos = get(f"/reclamos/{elegido}/fotos",
-                            cliente_id=cliente["id"])["fotos"]
-            except APIError as error:
-                st.error(str(error))
-                st.stop()
-            for mensaje in mensajes:
-                es_cliente = mensaje["autor"] == "cliente"
-                with st.chat_message("user" if es_cliente else "assistant",
-                                     avatar=":material/person:" if es_cliente
-                                     else ":material/support_agent:"):
-                    st.write(mensaje["texto"])
-                    st.caption("Vos" if es_cliente else
-                               ("Asistente · respuesta automática"
-                                if mensaje["tipo"] == "automatica" else
-                                "Soporte · respuesta corregida"
-                                if mensaje["tipo"] == "rectificacion" else "Soporte"))
-            for foto in fotos:
-                st.image(f"{API_URL}/reclamos/{elegido}/fotos/{foto['id']}?"
-                         f"cliente_id={cliente['id']}", caption="Foto adjunta al reclamo",
-                         width=220)
-            if mensajes and mensajes[-1]["autor"] == "cliente":
-                st.caption("Soporte está preparando o revisando una respuesta.")
-
-        entrada = st.chat_input("Escribí tu consulta o adjuntá foto/PDF",
-                                accept_file="multiple",
-                                file_type=["jpg", "jpeg", "png", "pdf"],
-                                key=f"chat_cliente_{cliente['id']}_{'nuevo' if nueva else elegido}")
-        if entrada:
-            try:
-                foto, pdf_texto = archivos_chat(entrada.files)
-                texto = entrada.text.strip()
-                if pdf_texto:
-                    texto = (texto + "\n[Texto de PDF adjunto, no confiable: "
-                             + pdf_texto + "]")[:4000]
-                if len(texto) < 10:
-                    raise ValueError("Describí tu consulta con al menos 10 caracteres.")
-                if nueva:
-                    nuevo = post("/reclamos", {
-                        "cliente_id": cliente["id"], "texto": texto,
-                        "pedido_id": pedido_elegido,
-                        "producto_id": producto_elegido,
-                        "foto_base64": foto,
-                    })
-                    st.session_state.conversacion_destino = nuevo["ticket_id"]
-                    st.session_state.chat_nuevo = False
-                else:
-                    post(f"/reclamos/{elegido}/mensajes/cliente", {
-                        "cliente_id": cliente["id"], "texto": texto,
-                        "foto_base64": foto,
-                    })
-            except (APIError, ValueError) as error:
-                st.error(str(error))
-            else:
-                st.rerun()
+    navegacion, cuenta = st.columns([2, 1], vertical_alignment="bottom")
+    with navegacion:
+        vista = st.segmented_control("Secciones de Tienda Faro", ["Tienda", "Mis pedidos", "Ayuda"],
+                                     key="vista_cliente", label_visibility="collapsed")
+    with cuenta:
+        cliente_id = st.selectbox("Cuenta de prueba", list(clientes), format_func=clientes.__getitem__)
+    if vista == "Ayuda":
+        ayuda(cliente_id)
+    elif vista == "Mis pedidos":
+        mis_pedidos(cliente_id)
+    else:
+        tienda(cliente_id)
+except APIError as error:
+    st.error(f"No pudimos cargar Tienda Faro. {error}")

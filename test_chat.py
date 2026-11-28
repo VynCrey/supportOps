@@ -67,7 +67,7 @@ class ChatTest(unittest.TestCase):
             def listar_mensajes_reclamo(self, ticket_id, cliente_id):
                 return None if cliente_id not in (None, 2) else self.mensajes
 
-            def enviar_mensaje_cliente(self, ticket_id, cliente_id, texto):
+            def enviar_mensaje_cliente(self, ticket_id, cliente_id, texto, *, foto=None):
                 if cliente_id != 2:
                     return None
                 mensaje = {"id": 2, "autor": "cliente", "texto": texto, "tipo": "mensaje"}
@@ -77,7 +77,8 @@ class ChatTest(unittest.TestCase):
             def contexto_conversacion(self, ticket_id):
                 ultimo = next(m for m in reversed(self.mensajes) if m["autor"] == "cliente")
                 return {"ultimo_texto_cliente": ultimo["texto"],
-                        "mensaje_cliente_id": ultimo["id"]}
+                        "mensaje_cliente_id": ultimo["id"],
+                        "ultimo_mensaje_id": self.mensajes[-1]["id"], "mensajes": self.mensajes}
 
             def contexto_reclamo(self, ticket_id):
                 return {}
@@ -88,8 +89,8 @@ class ChatTest(unittest.TestCase):
             def fotos_reclamo(self, ticket_id):
                 return []
 
-            def registrar_borrador_pendiente(self, ticket_id, mensaje_id):
-                pass
+            def registrar_borrador_pendiente(self, ticket_id, mensaje_id, inicio_api):
+                return True
 
             def enviar_mensaje_soporte(self, ticket_id, texto):
                 mensaje = {"id": 3, "autor": "soporte", "texto": texto, "tipo": "mensaje"}
@@ -141,21 +142,14 @@ class ChatTest(unittest.TestCase):
                                       "cliente": "Cliente ficticio", "texto": "Llegó roto",
                                       "estado": "abierto", "producto": None,
                                       "pedido_id": None}]}
-            if ruta == "/reclamos/7/mensajes":
-                return {"mensajes": estado["mensajes"]}
-            if ruta == "/reclamos/7/fotos":
-                return {"fotos": []}
+            if ruta == "/reclamos/7/chat":
+                return {"mensajes": estado["mensajes"], "fotos": [], "ticket_id": 7,
+                        "cliente": "Cliente ficticio", "estado": "abierto"}
             if ruta == "/reclamos/7/propuesta":
-                return {"estado": None}
-            if ruta == "/reclamos/7/mensajes/historial":
-                return {"mensajes": [
-                    {**m, "creado": "2026-11-25", "vigente": True, "motivo": None}
-                    for m in estado["mensajes"]
-                ]}
-            if ruta == "/tickets/7":
-                return {"id": 7, "cliente": "Cliente ficticio", "texto": "Llegó roto"}
-            if ruta == "/tickets/7/ejecuciones":
-                return {"ejecuciones": [{"id": 9}]}
+                if estado["enviado"]:
+                    return {"estado": "respondido"}
+                return ({"estado": "listo", "ejecucion_id": 9} if estado.get("analisis")
+                        else {"estado": "sin propuesta"})
             if ruta == "/ejecuciones/9":
                 return {"resultado": {"triage": {"categoria": "general"},
                                       "supervision": {"decision": "revisar"},
@@ -170,23 +164,23 @@ class ChatTest(unittest.TestCase):
                 estado["mensajes"].append({"id": 2, "autor": "soporte",
                                            "texto": cuerpo["texto"], "tipo": "mensaje"})
                 return {"id": 2}
-            if ruta == "/tickets/7/analizar":
+            if ruta == "/reclamos/7/propuesta":
                 estado["analisis"] = 9
-                return {"ejecucion_id": 9}
+                return {"estado": "preparando"}
             raise AssertionError(ruta)
 
         with patch("api_client.get", side_effect=get), patch("api_client.post", side_effect=post):
             app = AppTest.from_file(Path(__file__).with_name("streamlit_app.py"),
                                     default_timeout=10)
             app.run()
-            app.radio[0].set_value("Bandeja").run()
-            self.assertEqual(len(app.chat_message), 1)
+            self.assertTrue(any("producto ficticio llegó roto" in el.proto.body for el in app.get("html")))
+            next(b for b in app.button if b.label == "Preparar propuesta").click().run()
+            self.assertTrue(any("Propuesta interna" == el.value for el in app.text))
             app.chat_input[0].set_value("Podemos revisar ese producto ficticio.").run()
             self.assertEqual(estado["enviado"], "Podemos revisar ese producto ficticio.")
-            self.assertEqual(len(app.chat_message), 2)
-            next(b for b in app.button if b.label == "Volver a preparar propuesta").click().run()
-            self.assertEqual(estado["analisis"], 9)
-            self.assertTrue(any("Propuesta interna" in m.value for m in app.markdown))
+            self.assertTrue(any("Podemos revisar ese producto ficticio." in el.proto.body
+                                for el in app.get("html")))
+            self.assertFalse(any("Propuesta interna" == el.value for el in app.text))
             self.assertFalse(app.exception)
 
 

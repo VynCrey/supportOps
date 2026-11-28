@@ -21,7 +21,7 @@ class SupportOpsDB:
         )
 
     @staticmethod
-    def _registrar_estado_ticket(cursor, ticket_id: int, publicado: bool,
+    def _registrar_estado_ticket(cursor, ticket_id: int, publicado: bool | None,
                                  tipo_evento: str):
         if publicado:
             cursor.execute(
@@ -33,7 +33,7 @@ class SupportOpsDB:
                 """,
                 (ticket_id,),
             )
-        else:
+        elif publicado is False:
             cursor.execute(
                 "UPDATE tickets SET estado = 'abierto', resuelto = NULL WHERE id = %s",
                 (ticket_id,),
@@ -257,15 +257,13 @@ class SupportOpsDB:
                     (fila["ticket_id"],),
                 )
                 es_reclamo = cursor.fetchone() is not None
-                if es_reclamo and decision != "rechazar":
-                    cursor.execute(
-                        "SELECT id FROM mensajes_reclamo WHERE ticket_id = %s "
-                        "AND vigente ORDER BY id DESC LIMIT 1",
-                        (fila["ticket_id"],),
+                corresponde_al_ultimo = True
+                if es_reclamo:
+                    ultimo_mensaje = self._ultimo_mensaje_vigente(cursor, fila["ticket_id"])
+                    corresponde_al_ultimo = bool(
+                        ultimo_mensaje and resultado.get("ultimo_mensaje_id") == ultimo_mensaje["id"]
                     )
-                    ultimo_mensaje = cursor.fetchone()
-                    if (ultimo_mensaje is None or resultado.get("ultimo_mensaje_id")
-                            != ultimo_mensaje["id"]):
+                    if not corresponde_al_ultimo and decision != "rechazar":
                         raise ValueError(
                             "La conversación cambió después del análisis. Volvé a analizar antes de responder"
                         )
@@ -304,7 +302,7 @@ class SupportOpsDB:
                         (fila["ticket_id"], texto_final, ejecucion_id),
                     )
                 self._registrar_estado_ticket(
-                    cursor, fila["ticket_id"], decision != "rechazar",
+                    cursor, fila["ticket_id"], (decision != "rechazar") if corresponde_al_ultimo else None,
                     "revision_" + decision,
                 )
                 return revision
@@ -393,7 +391,8 @@ class SupportOpsDB:
 
     def crear_reclamo(self, cliente_id: int, texto: str,
                       producto_id: str | None = None,
-                      pedido_id: int | None = None):
+                      pedido_id: int | None = None, *,
+                      foto: tuple[str, bytes] | None = None):
         with self.conectar() as conexion, conexion.cursor() as cursor:
             cursor.execute(
                 "SELECT nombre, plan FROM clientes WHERE id = %s", (cliente_id,)
@@ -432,31 +431,44 @@ class SupportOpsDB:
                 """
                 INSERT INTO mensajes_reclamo (ticket_id, autor, texto, tipo)
                 VALUES (%s, 'cliente', %s, 'inicio')
+                RETURNING id
                 """,
                 (ticket["id"], texto),
             )
+            mensaje_id = cursor.fetchone()["id"]
+            if foto:
+                self._guardar_foto_mensaje(cursor, ticket["id"], cliente_id, mensaje_id, foto)
             return {
                 **ticket, "reclamo_id": reclamo["id"], "ticket_id": ticket["id"],
                 "cliente_id": cliente_id, "cliente": cliente["nombre"],
                 "plan": cliente["plan"], "texto": texto,
                 "producto_id": producto_id, "pedido_id": pedido_id,
+                "mensaje_cliente_id": mensaje_id,
             }
 
     def listar_reclamos(self, cliente_id: int | None = None):
         consulta = """
             SELECT r.id, r.ticket_id, r.pedido_id, r.producto_id,
                    pr.nombre AS producto, t.cliente_id, c.nombre AS cliente,
-                   t.texto, t.estado, t.creado
+                   t.texto, t.estado, t.creado,
+                   ultimo.texto AS ultimo_texto, ultimo.creado AS ultima_actividad,
+                   COALESCE(ultimo.autor = 'cliente', FALSE) AS necesita_soporte
             FROM reclamos AS r
             JOIN tickets AS t ON t.id = r.ticket_id
             JOIN clientes AS c ON c.id = t.cliente_id
             LEFT JOIN productos AS pr ON pr.id = r.producto_id
+            LEFT JOIN LATERAL (
+                SELECT m.id, m.texto, m.creado, m.autor
+                FROM mensajes_reclamo AS m
+                WHERE m.ticket_id = t.id AND m.vigente
+                ORDER BY COALESCE(m.orden_id, m.id) DESC, m.id DESC LIMIT 1
+            ) AS ultimo ON TRUE
         """
         parametros = ()
         if cliente_id is not None:
             consulta += " WHERE t.cliente_id = %s"
             parametros = (cliente_id,)
-        consulta += " ORDER BY r.id DESC LIMIT 100"
+        consulta += " ORDER BY ultimo.id DESC NULLS LAST, r.id DESC LIMIT 100"
         with self.conectar() as conexion, conexion.cursor() as cursor:
             cursor.execute(consulta, parametros)
             return cursor.fetchall()
@@ -508,9 +520,29 @@ class SupportOpsDB:
             fila = cursor.fetchone()
             if fila is None or (cliente_id is not None and fila["cliente_id"] != cliente_id):
                 return None
-            cursor.execute("SELECT id, mime, creado FROM fotos_reclamo "
-                           "WHERE ticket_id = %s ORDER BY id", (ticket_id,))
-            return cursor.fetchall()
+            return self._fotos_visibles(cursor, ticket_id)
+
+    @staticmethod
+    def _fotos_visibles(cursor, ticket_id: int):
+        cursor.execute(
+            "SELECT id, mime, creado, mensaje_id FROM fotos_reclamo "
+            "WHERE ticket_id = %s ORDER BY id", (ticket_id,),
+        )
+        return cursor.fetchall()
+
+    @staticmethod
+    def _guardar_foto_mensaje(cursor, ticket_id: int, cliente_id: int,
+                             mensaje_id: int, foto: tuple[str, bytes]):
+        mime, contenido = foto
+        cursor.execute(
+            """
+            INSERT INTO fotos_reclamo (ticket_id, cliente_id, mime, datos, mensaje_id)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id, ticket_id, mime, creado, mensaje_id
+            """,
+            (ticket_id, cliente_id, mime, contenido, mensaje_id),
+        )
+        return cursor.fetchone()
 
     def guardar_foto_reclamo(self, ticket_id: int, cliente_id: int, mime: str,
                              contenido: bytes):
@@ -520,14 +552,12 @@ class SupportOpsDB:
                            (ticket_id, cliente_id))
             if cursor.fetchone() is None:
                 return None
-            cursor.execute("INSERT INTO fotos_reclamo "
-                           "(ticket_id, cliente_id, mime, datos) VALUES (%s, %s, %s, %s) "
-                           "RETURNING id, ticket_id, mime, creado",
-                           (ticket_id, cliente_id, mime, contenido))
-            foto = cursor.fetchone()
             cursor.execute("INSERT INTO mensajes_reclamo (ticket_id, autor, texto) "
-                           "VALUES (%s, 'cliente', 'Adjunté una foto del producto.')",
+                           "VALUES (%s, 'cliente', 'Adjunté una foto del producto.') RETURNING id",
                            (ticket_id,))
+            foto = self._guardar_foto_mensaje(
+                cursor, ticket_id, cliente_id, cursor.fetchone()["id"], (mime, contenido)
+            )
             self._registrar_estado_ticket(cursor, ticket_id, False, "foto_cliente")
             return foto
 
@@ -544,9 +574,8 @@ class SupportOpsDB:
     def publicar_automatica(self, ticket_id: int, mensaje_id: int, texto: str,
                             resuelto: bool):
         with self.conectar() as conexion, conexion.cursor() as cursor:
-            cursor.execute("SELECT id FROM mensajes_reclamo WHERE ticket_id = %s "
-                           "ORDER BY id DESC LIMIT 1 FOR UPDATE", (ticket_id,))
-            ultimo = cursor.fetchone()
+            cursor.execute("SELECT id FROM tickets WHERE id = %s FOR UPDATE", (ticket_id,))
+            ultimo = self._ultimo_mensaje_vigente(cursor, ticket_id)
             if not ultimo or ultimo["id"] != mensaje_id:
                 return None
             cursor.execute("INSERT INTO mensajes_reclamo (ticket_id, autor, texto, tipo) "
@@ -557,11 +586,34 @@ class SupportOpsDB:
             self._registrar_estado_ticket(cursor, ticket_id, resuelto, "respuesta_automatica")
             return mensaje
 
-    def registrar_borrador_pendiente(self, ticket_id: int, mensaje_id: int):
+    def registrar_borrador_pendiente(self, ticket_id: int, mensaje_id: int, inicio_api):
         with self.conectar() as conexion, conexion.cursor() as cursor:
-            cursor.execute("INSERT INTO borradores_pendientes "
-                           "(ticket_id, mensaje_id, estado) VALUES (%s, %s, 'preparando') "
-                           "ON CONFLICT (mensaje_id) DO NOTHING", (ticket_id, mensaje_id))
+            cursor.execute("SELECT id FROM tickets WHERE id = %s FOR UPDATE", (ticket_id,))
+            cursor.execute(
+                """
+                INSERT INTO borradores_pendientes (ticket_id, mensaje_id, estado)
+                SELECT %s, id, 'preparando'
+                FROM (
+                    SELECT id, autor FROM mensajes_reclamo WHERE ticket_id = %s AND vigente
+                    ORDER BY COALESCE(orden_id, id) DESC, id DESC LIMIT 1
+                ) AS ultimo
+                WHERE id = %s AND autor = 'cliente'
+                ON CONFLICT (mensaje_id) DO UPDATE
+                    SET estado = 'preparando', ejecucion_id = NULL, detalle = '', actualizado = now()
+                WHERE borradores_pendientes.estado = 'error'
+                   OR (borradores_pendientes.estado = 'preparando'
+                       AND (borradores_pendientes.actualizado < %s
+                            OR borradores_pendientes.actualizado < now() - INTERVAL '15 minutes'))
+                   OR EXISTS (
+                       SELECT 1 FROM revisiones
+                       WHERE ejecucion_id = borradores_pendientes.ejecucion_id
+                         AND decision = 'rechazar'
+                   )
+                RETURNING mensaje_id
+                """,
+                (ticket_id, ticket_id, mensaje_id, inicio_api),
+            )
+            return cursor.fetchone() is not None
 
     def terminar_borrador_pendiente(self, mensaje_id: int, ejecucion_id: int | None,
                                     detalle: str = ""):
@@ -572,13 +624,26 @@ class SupportOpsDB:
                            ("listo" if ejecucion_id else "error", ejecucion_id,
                             detalle[:200], mensaje_id))
 
-    def estado_borrador(self, ticket_id: int):
+    def estado_borrador(self, ticket_id: int, inicio_api):
         with self.conectar() as conexion, conexion.cursor() as cursor:
-            cursor.execute("SELECT b.estado, b.ejecucion_id, b.detalle "
-                           "FROM mensajes_reclamo m LEFT JOIN borradores_pendientes b "
-                           "ON b.mensaje_id = m.id WHERE m.ticket_id = %s "
-                           "AND m.autor = 'cliente' ORDER BY m.id DESC LIMIT 1",
-                           (ticket_id,))
+            cursor.execute(
+                """
+                SELECT CASE WHEN m.autor = 'soporte' THEN 'respondido'
+                            WHEN v.decision = 'rechazar' THEN 'rechazado'
+                            WHEN b.estado = 'preparando'
+                                AND (b.actualizado < %s
+                                    OR b.actualizado < now() - INTERVAL '15 minutes') THEN 'error'
+                            ELSE COALESCE(b.estado, 'sin propuesta') END AS estado,
+                       CASE WHEN m.autor = 'cliente' THEN b.ejecucion_id END AS ejecucion_id,
+                       NULLIF(b.detalle, '') AS detalle
+                FROM mensajes_reclamo m
+                LEFT JOIN borradores_pendientes b ON b.mensaje_id = m.id
+                LEFT JOIN revisiones v ON v.ejecucion_id = b.ejecucion_id
+                WHERE m.ticket_id = %s AND m.vigente
+                ORDER BY COALESCE(m.orden_id, m.id) DESC, m.id DESC LIMIT 1
+                """,
+                (inicio_api, ticket_id),
+            )
             return cursor.fetchone()
 
     def listar_mensajes_reclamo(self, ticket_id: int, cliente_id: int | None = None):
@@ -595,16 +660,48 @@ class SupportOpsDB:
             if reclamo is None or (cliente_id is not None and
                                   reclamo["cliente_id"] != cliente_id):
                 return None
+            return self._mensajes_visibles(cursor, ticket_id)
+
+    @staticmethod
+    def _ultimo_mensaje_vigente(cursor, ticket_id: int):
+        cursor.execute(
+            "SELECT id FROM mensajes_reclamo WHERE ticket_id = %s AND vigente "
+            "ORDER BY COALESCE(orden_id, id) DESC, id DESC LIMIT 1",
+            (ticket_id,),
+        )
+        return cursor.fetchone()
+
+    @staticmethod
+    def _mensajes_visibles(cursor, ticket_id: int):
+        cursor.execute(
+            """
+            SELECT id, ticket_id, autor, texto, creado, tipo
+            FROM mensajes_reclamo WHERE ticket_id = %s AND vigente
+            ORDER BY COALESCE(orden_id, id), id
+            """,
+            (ticket_id,),
+        )
+        return cursor.fetchall()
+
+    def leer_chat(self, ticket_id: int, cliente_id: int | None = None):
+        with self.conectar() as conexion, conexion.cursor() as cursor:
+            # La vista de cliente solo recibe la conversación de la cuenta elegida.
             cursor.execute(
                 """
-                SELECT id, ticket_id, autor, texto, creado, tipo
-                FROM mensajes_reclamo
-                WHERE ticket_id = %s AND vigente
-                ORDER BY id
+                SELECT t.estado, c.nombre AS cliente, r.pedido_id, pr.nombre AS producto
+                FROM reclamos r JOIN tickets t ON t.id = r.ticket_id
+                JOIN clientes c ON c.id = t.cliente_id
+                LEFT JOIN productos pr ON pr.id = r.producto_id
+                WHERE r.ticket_id = %s AND (%s::bigint IS NULL OR t.cliente_id = %s)
                 """,
-                (ticket_id,),
+                (ticket_id, cliente_id, cliente_id),
             )
-            return cursor.fetchall()
+            chat = cursor.fetchone()
+            if chat is None:
+                return None
+            return {**chat, "ticket_id": ticket_id,
+                    "mensajes": self._mensajes_visibles(cursor, ticket_id),
+                    "fotos": self._fotos_visibles(cursor, ticket_id)}
 
     def historial_mensajes_reclamo(self, ticket_id: int):
         with self.conectar() as conexion, conexion.cursor() as cursor:
@@ -613,7 +710,7 @@ class SupportOpsDB:
                 return None
             cursor.execute(
                 """
-                SELECT id, autor, texto, tipo, vigente, rectifica_id, motivo, creado
+                SELECT id, autor, texto, tipo, vigente, rectifica_id, motivo, creado, ejecucion_id
                 FROM mensajes_reclamo WHERE ticket_id = %s ORDER BY id
                 """,
                 (ticket_id,),
@@ -625,22 +722,26 @@ class SupportOpsDB:
         with self.conectar() as conexion, conexion.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT id, autor, texto FROM mensajes_reclamo
-                WHERE ticket_id = %s AND vigente
-                ORDER BY id DESC LIMIT 8
+                WITH recientes AS (
+                    SELECT id, autor, texto, tipo, COALESCE(orden_id, id) AS posicion
+                    FROM mensajes_reclamo WHERE ticket_id = %s AND vigente
+                    ORDER BY posicion DESC, id DESC LIMIT 8
+                ), ultimo_cliente AS (
+                    SELECT id, texto FROM mensajes_reclamo
+                    WHERE ticket_id = %s AND vigente AND autor = 'cliente'
+                    ORDER BY id DESC LIMIT 1
+                )
+                SELECT COALESCE((SELECT jsonb_agg(to_jsonb(m) ORDER BY m.posicion, m.id)
+                                 FROM recientes m),
+                                '[]'::jsonb) AS mensajes,
+                       (SELECT id FROM recientes ORDER BY posicion DESC, id DESC LIMIT 1)
+                           AS ultimo_mensaje_id,
+                       (SELECT id FROM ultimo_cliente) AS mensaje_cliente_id,
+                       (SELECT texto FROM ultimo_cliente) AS ultimo_texto_cliente
                 """,
-                (ticket_id,),
+                (ticket_id, ticket_id),
             )
-            mensajes = list(reversed(cursor.fetchall()))
-            cursor.execute(
-                "SELECT id, texto FROM mensajes_reclamo WHERE ticket_id = %s "
-                "AND autor = 'cliente' ORDER BY id DESC LIMIT 1",
-                (ticket_id,),
-            )
-            ultimo = cursor.fetchone()
-            return {"mensajes": mensajes, "mensaje_cliente_id": ultimo["id"] if ultimo else None,
-                    "ultimo_mensaje_id": mensajes[-1]["id"] if mensajes else None,
-                    "ultimo_texto_cliente": ultimo["texto"] if ultimo else None}
+            return cursor.fetchone()
 
     def rectificar_mensaje_soporte(self, ticket_id: int, mensaje_id: int,
                                   texto: str, motivo: str):
@@ -650,9 +751,11 @@ class SupportOpsDB:
         if pide_credenciales({"texto": texto}):
             raise ValueError("La respuesta solicita credenciales y no puede enviarse")
         with self.conectar() as conexion, conexion.cursor() as cursor:
+            cursor.execute("SELECT id FROM tickets WHERE id = %s FOR UPDATE", (ticket_id,))
             cursor.execute(
                 """
-                SELECT m.id, m.ejecucion_id FROM mensajes_reclamo AS m
+                SELECT m.id, m.ejecucion_id, COALESCE(m.orden_id, m.id) AS posicion
+                FROM mensajes_reclamo AS m
                 WHERE m.id = %s AND m.ticket_id = %s AND m.autor = 'soporte'
                   AND m.vigente FOR UPDATE
                 """,
@@ -670,20 +773,21 @@ class SupportOpsDB:
             cursor.execute(
                 """
                 INSERT INTO mensajes_reclamo
-                    (ticket_id, autor, texto, tipo, rectifica_id, motivo)
-                VALUES (%s, 'soporte', %s, 'rectificacion', %s, %s)
+                    (ticket_id, autor, texto, tipo, rectifica_id, motivo, orden_id)
+                VALUES (%s, 'soporte', %s, 'rectificacion', %s, %s, %s)
                 RETURNING id, ticket_id, autor, texto, creado, tipo
                 """,
-                (ticket_id, texto, mensaje_id, motivo),
+                (ticket_id, texto, mensaje_id, motivo, original["posicion"]),
             )
             mensaje = cursor.fetchone()
-            self._registrar_estado_ticket(cursor, ticket_id, True, "rectificacion_soporte")
+            self._registrar_estado_ticket(cursor, ticket_id, None, "rectificacion_soporte")
             return mensaje
 
-    def enviar_mensaje_cliente(self, ticket_id: int, cliente_id: int, texto: str):
+    def enviar_mensaje_cliente(self, ticket_id: int, cliente_id: int, texto: str, *,
+                               foto: tuple[str, bytes] | None = None):
         texto = texto.strip()
-        if not 10 <= len(texto) <= 4000:
-            raise ValueError("El mensaje debe tener entre 10 y 4000 caracteres")
+        if not 1 <= len(texto) <= 4000:
+            raise ValueError("Escribí un mensaje de hasta 4000 caracteres")
         with self.conectar() as conexion, conexion.cursor() as cursor:
             cursor.execute(
                 """
@@ -703,6 +807,8 @@ class SupportOpsDB:
                 (ticket_id, texto),
             )
             mensaje = cursor.fetchone()
+            if foto:
+                self._guardar_foto_mensaje(cursor, ticket_id, cliente_id, mensaje["id"], foto)
             self._registrar_estado_ticket(cursor, ticket_id, False, "mensaje_cliente")
             return mensaje
 
@@ -794,6 +900,8 @@ class SupportOpsDB:
                 )
             ):
                 raise ValueError("Un analisis bloqueado no puede publicarse")
+            ticket_id = original["ticket_id"]
+            cursor.execute("SELECT id FROM tickets WHERE id = %s FOR UPDATE", (ticket_id,))
             cursor.execute(
                 """
                 INSERT INTO correcciones
@@ -805,26 +913,35 @@ class SupportOpsDB:
                 (original["id"], decision, texto_final, motivo.strip(), operador.strip()),
             )
             correccion = cursor.fetchone()
+            ultimo = self._ultimo_mensaje_vigente(cursor, ticket_id)
             cursor.execute(
                 "UPDATE mensajes_reclamo SET vigente = FALSE "
-                "WHERE ejecucion_id = %s AND vigente",
+                "WHERE ejecucion_id = %s AND vigente "
+                "RETURNING id, COALESCE(orden_id, id) AS posicion",
                 (ejecucion_id,),
             )
+            anterior = cursor.fetchone()
             cursor.execute(
                 "SELECT 1 FROM reclamos WHERE ticket_id = %s",
-                (original["ticket_id"],),
+                (ticket_id,),
             )
-            if cursor.fetchone() is not None and decision == "editar":
+            es_reclamo = cursor.fetchone() is not None
+            if es_reclamo and decision == "editar":
                 cursor.execute(
                     """
                     INSERT INTO mensajes_reclamo
-                        (ticket_id, autor, texto, ejecucion_id, tipo)
-                    VALUES (%s, 'soporte', %s, %s, 'rectificacion')
+                        (ticket_id, autor, texto, ejecucion_id, tipo, orden_id, rectifica_id, motivo)
+                    VALUES (%s, 'soporte', %s, %s, 'rectificacion', %s, %s, %s)
                     """,
-                    (original["ticket_id"], texto_final, ejecucion_id),
+                    (ticket_id, texto_final, ejecucion_id,
+                     anterior["posicion"] if anterior else None,
+                     anterior["id"] if anterior else None, motivo.strip()),
                 )
+            publicado = decision == "editar"
+            if es_reclamo and anterior and ultimo and anterior["id"] != ultimo["id"]:
+                publicado = None
             self._registrar_estado_ticket(
-                cursor, original["ticket_id"], decision == "editar",
+                cursor, ticket_id, publicado,
                 "correccion_" + decision,
             )
             return correccion

@@ -1,5 +1,6 @@
 import base64
 import binascii
+from datetime import datetime, timezone
 from typing import Literal
 from urllib.error import URLError
 
@@ -10,7 +11,7 @@ from pydantic import BaseModel, Field, ValidationError, field_validator
 from analysis import TicketNoEncontrado, analyze
 from db import SupportOpsDB
 from foto_guard import preparar_foto
-from tienda_respuestas import consulta_danio, respuesta_simple
+from tienda_respuestas import respuesta_simple
 
 
 Plan = Literal["Basic", "Pro", "Enterprise"]
@@ -43,18 +44,15 @@ class NuevoPedido(BaseModel):
     cantidad: int = Field(ge=1, le=10)
 
 
-class NuevoReclamo(BaseModel):
-    cliente_id: int = Field(gt=0)
-    texto: str = Field(min_length=10, max_length=4000)
-    producto_id: str | None = Field(default=None, max_length=40)
-    pedido_id: int | None = Field(default=None, gt=0)
-    foto_base64: str | None = Field(default=None, max_length=3_000_000)
-
-
 class MensajeCliente(BaseModel):
     cliente_id: int = Field(gt=0)
-    texto: str = Field(min_length=10, max_length=4000)
+    texto: str = Field(default="", max_length=4000)
     foto_base64: str | None = Field(default=None, max_length=3_000_000)
+
+
+class NuevoReclamo(MensajeCliente):
+    producto_id: str | None = Field(default=None, max_length=40)
+    pedido_id: int | None = Field(default=None, gt=0)
 
 
 class MensajeSoporte(BaseModel):
@@ -89,21 +87,26 @@ class NuevaCorreccion(BaseModel):
 def crear_app(clave_db: str) -> FastAPI:
     app = FastAPI(title="SupportOps", version="0.1.0")
     datos = SupportOpsDB(clave_db)
+    inicio_api = datetime.now(timezone.utc)
 
     def preparar_propuesta(ticket_id: int, mensaje_id: int):
         try:
-            resultado = analyze(ticket_id, datos)
+            conversacion = datos.contexto_conversacion(ticket_id)
+            if conversacion["ultimo_mensaje_id"] != mensaje_id:
+                return
+            resultado = analyze(ticket_id, datos, conversacion=conversacion)
         except Exception:
             datos.terminar_borrador_pendiente(
-                mensaje_id, None, "No se pudo preparar la propuesta. Reintentá desde soporte."
+                mensaje_id, None, "No pudimos preparar una propuesta. Podés reintentar o responder por el chat."
             )
         else:
             datos.terminar_borrador_pendiente(mensaje_id, resultado["ejecucion_id"])
 
-    def atender_mensaje(ticket_id: int, tareas: BackgroundTasks) -> dict:
+    def atender_mensaje(ticket_id: int, mensaje_id: int, tareas: BackgroundTasks) -> dict:
         conversacion = datos.contexto_conversacion(ticket_id)
+        if conversacion["ultimo_mensaje_id"] != mensaje_id:
+            return {"atencion": "sin_cambio"}
         texto = conversacion["ultimo_texto_cliente"] or ""
-        mensaje_id = conversacion["mensaje_cliente_id"]
         contexto = datos.contexto_reclamo(ticket_id) or {}
         producto = None
         if contexto.get("producto_id"):
@@ -111,15 +114,18 @@ def crear_app(clave_db: str) -> FastAPI:
                         "precio": contexto["precio"], "stock": contexto["stock"]}
         pedido = datos.pedido_del_reclamo(ticket_id)
         fotos = datos.fotos_reclamo(ticket_id) or []
-        respuesta = respuesta_simple(texto, pedido=pedido, producto=producto,
-                                     tiene_foto=bool(fotos))
+        respuesta = respuesta_simple(
+            texto, pedido=pedido, producto=producto, tiene_foto=bool(fotos),
+            anteriores=conversacion["mensajes"][:-1],
+        )
         if respuesta:
             publicado = datos.publicar_automatica(
-                ticket_id, mensaje_id, respuesta, not consulta_danio(texto)
+                ticket_id, mensaje_id, respuesta.texto, respuesta.resuelve
             )
-            return {"atencion": "automatica", "mensaje": publicado}
-        datos.registrar_borrador_pendiente(ticket_id, mensaje_id)
-        tareas.add_task(preparar_propuesta, ticket_id, mensaje_id)
+            return ({"atencion": "automatica", "mensaje": publicado}
+                    if publicado else {"atencion": "sin_cambio"})
+        if datos.registrar_borrador_pendiente(ticket_id, mensaje_id, inicio_api):
+            tareas.add_task(preparar_propuesta, ticket_id, mensaje_id)
         return {"atencion": "soporte", "propuesta": "preparando"}
 
     def decodificar_foto(contenido_base64: str | None):
@@ -131,11 +137,14 @@ def crear_app(clave_db: str) -> FastAPI:
         except (binascii.Error, ValueError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
 
-    def guardar_foto_validada(ticket_id: int, cliente_id: int, foto):
-        if foto is None:
-            return None
-        mime, limpia = foto
-        return datos.guardar_foto_reclamo(ticket_id, cliente_id, mime, limpia)
+    def leer_entrada(nuevo: MensajeCliente):
+        foto = decodificar_foto(nuevo.foto_base64)
+        texto = nuevo.texto.strip()
+        if not texto:
+            if foto is None:
+                raise HTTPException(status_code=422, detail="Escribí un mensaje o adjuntá una foto.")
+            texto = "Adjunté una foto del producto."
+        return texto, foto
 
     @app.get("/health")
     def health():
@@ -266,20 +275,23 @@ def crear_app(clave_db: str) -> FastAPI:
 
     @app.post("/reclamos", status_code=201)
     def crear_reclamo(nuevo: NuevoReclamo, tareas: BackgroundTasks):
-        texto = nuevo.texto.strip()
-        if not 10 <= len(texto) <= 4000:
-            raise HTTPException(status_code=422, detail="Describi el reclamo")
-        foto = decodificar_foto(nuevo.foto_base64)
+        texto, foto = leer_entrada(nuevo)
         try:
             reclamo = datos.crear_reclamo(
-                nuevo.cliente_id, texto, nuevo.producto_id, nuevo.pedido_id
+                nuevo.cliente_id, texto, nuevo.producto_id, nuevo.pedido_id, foto=foto,
             )
-            guardar_foto_validada(reclamo["ticket_id"], nuevo.cliente_id, foto)
-            return {**reclamo, **atender_mensaje(reclamo["ticket_id"], tareas)}
         except LookupError as error:
             raise HTTPException(status_code=404, detail=str(error)) from error
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
+        return {**reclamo, **atender_mensaje(reclamo["ticket_id"], reclamo["mensaje_cliente_id"], tareas)}
+
+    @app.get("/reclamos/{ticket_id}/chat")
+    def leer_chat(ticket_id: int, cliente_id: int | None = Query(default=None, gt=0)):
+        chat = datos.leer_chat(ticket_id, cliente_id)
+        if chat is None:
+            raise HTTPException(status_code=404, detail="Conversación no encontrada")
+        return chat
 
     @app.get("/reclamos/{ticket_id}/mensajes")
     def listar_mensajes_reclamo(
@@ -300,23 +312,33 @@ def crear_app(clave_db: str) -> FastAPI:
     @app.post("/reclamos/{ticket_id}/mensajes/cliente", status_code=201)
     def enviar_mensaje_cliente(ticket_id: int, nuevo: MensajeCliente,
                                tareas: BackgroundTasks):
-        foto = decodificar_foto(nuevo.foto_base64)
+        texto, foto = leer_entrada(nuevo)
         try:
             mensaje = datos.enviar_mensaje_cliente(
-                ticket_id, nuevo.cliente_id, nuevo.texto
+                ticket_id, nuevo.cliente_id, texto, foto=foto,
             )
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         if mensaje is None:
             raise HTTPException(status_code=404, detail="Conversación no encontrada")
-        guardar_foto_validada(ticket_id, nuevo.cliente_id, foto)
-        return {**mensaje, **atender_mensaje(ticket_id, tareas)}
+        return {**mensaje, **atender_mensaje(ticket_id, mensaje["id"], tareas)}
 
     @app.get("/reclamos/{ticket_id}/propuesta")
     def estado_propuesta(ticket_id: int):
+        propuesta = datos.estado_borrador(ticket_id, inicio_api)
+        if propuesta is None:
+            raise HTTPException(status_code=404, detail="Conversación no encontrada")
+        return propuesta
+
+    @app.post("/reclamos/{ticket_id}/propuesta", status_code=202)
+    def reintentar_propuesta(ticket_id: int, tareas: BackgroundTasks):
         if not datos.es_reclamo(ticket_id):
             raise HTTPException(status_code=404, detail="Conversación no encontrada")
-        return datos.estado_borrador(ticket_id) or {"estado": "sin mensajes"}
+        mensaje_id = datos.contexto_conversacion(ticket_id)["mensaje_cliente_id"]
+        if mensaje_id is None or not datos.registrar_borrador_pendiente(ticket_id, mensaje_id, inicio_api):
+            raise HTTPException(status_code=409, detail="Ya hay una propuesta o el mensaje fue respondido.")
+        tareas.add_task(preparar_propuesta, ticket_id, mensaje_id)
+        return {"estado": "preparando"}
 
     @app.get("/reclamos/{ticket_id}/fotos")
     def listar_fotos(ticket_id: int, cliente_id: int | None = Query(default=None, gt=0)):
@@ -335,11 +357,11 @@ def crear_app(clave_db: str) -> FastAPI:
 
     @app.post("/reclamos/{ticket_id}/fotos", status_code=201)
     def agregar_foto(ticket_id: int, nueva: FotoNueva, tareas: BackgroundTasks):
-        foto = guardar_foto_validada(ticket_id, nueva.cliente_id,
-                                    decodificar_foto(nueva.contenido_base64))
+        mime, contenido = decodificar_foto(nueva.contenido_base64)
+        foto = datos.guardar_foto_reclamo(ticket_id, nueva.cliente_id, mime, contenido)
         if foto is None:
             raise HTTPException(status_code=404, detail="Conversación no encontrada")
-        return {**foto, **atender_mensaje(ticket_id, tareas)}
+        return {**foto, **atender_mensaje(ticket_id, foto["mensaje_id"], tareas)}
 
     @app.post("/reclamos/{ticket_id}/mensajes/soporte", status_code=201)
     def enviar_mensaje_soporte(ticket_id: int, nuevo: MensajeSoporte):

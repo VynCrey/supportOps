@@ -139,6 +139,7 @@ CREATE TABLE IF NOT EXISTS mensajes_reclamo (
 ALTER TABLE mensajes_reclamo DROP CONSTRAINT IF EXISTS mensajes_reclamo_tipo_check;
 ALTER TABLE mensajes_reclamo ADD CONSTRAINT mensajes_reclamo_tipo_check
 CHECK (tipo IN ('inicio', 'mensaje', 'revision', 'rectificacion', 'automatica'));
+ALTER TABLE mensajes_reclamo ADD COLUMN IF NOT EXISTS orden_id BIGINT;
 
 CREATE TABLE IF NOT EXISTS fotos_reclamo (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -148,6 +149,9 @@ CREATE TABLE IF NOT EXISTS fotos_reclamo (
     datos BYTEA NOT NULL,
     creado TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE fotos_reclamo ADD COLUMN IF NOT EXISTS mensaje_id
+    BIGINT REFERENCES mensajes_reclamo(id);
 
 CREATE TABLE IF NOT EXISTS borradores_pendientes (
     mensaje_id BIGINT PRIMARY KEY REFERENCES mensajes_reclamo(id),
@@ -160,6 +164,8 @@ CREATE TABLE IF NOT EXISTS borradores_pendientes (
 
 CREATE INDEX IF NOT EXISTS ix_mensajes_reclamo_ticket
     ON mensajes_reclamo(ticket_id, id);
+CREATE INDEX IF NOT EXISTS ix_mensajes_reclamo_orden
+    ON mensajes_reclamo(ticket_id, COALESCE(orden_id, id), id) WHERE vigente;
 
 -- Al actualizar una base existente, cada reclamo conserva su primer mensaje.
 INSERT INTO mensajes_reclamo (ticket_id, autor, texto, creado, tipo)

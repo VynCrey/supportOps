@@ -8,7 +8,7 @@ Copiá `SupportOps_netbook.zip` a la netbook y **extraé todo el ZIP** en una ca
 
 Los dos informes para presentar están en `docs\entrega_final\` dentro del ZIP: `SupportOps_Informe_Tecnico_2026.pdf` y `SupportOps_Informe_Proyecto_Integrador_2026.pdf`.
 
-La versión actual del ZIP se genera en la carpeta `proyectoFinal` con `python crear_paquete_netbook.py`. Si ya tenés una copia anterior en la netbook, reemplazá la carpeta extraída por esta versión antes de repetir `01_PREPARAR_NETBOOK.cmd`.
+La versión actual del ZIP se genera en la carpeta `proyectoFinal` con `python crear_paquete_netbook.py`. Para actualizar una instalación, cerrá la API y las dos pantallas. Extraé el ZIP sobre la carpeta del programa y aceptá reemplazar sus archivos. Desde esa carpeta actualizá las bibliotecas con `.\.venv\Scripts\python.exe -m pip install -r .\requirements.txt`. Al volver a iniciar, la API actualiza las tablas de la base existente.
 
 El ZIP no contiene la base PostgreSQL de la otra computadora, contraseñas, el entorno `.venv` ni el modelo de Ollama. Esos componentes se crean o instalan **una vez en la netbook**. La copia arranca con 3 clientes, 6 tickets, 8 productos y 56 documentos ficticios; no trae las ejecuciones y revisiones hechas en la computadora original. No hace falta cargar 20.000 tickets para mostrar el programa.
 
@@ -45,10 +45,10 @@ Esperá el mensaje **«Preparacion terminada»**. Si falla, leé el error de la 
 
 1. En la pantalla del cliente, elegí una de las tres cuentas de prueba, mirá **Tienda** y hacé una compra simulada. Los otros 500 clientes de la muestra estadística no aparecen en esta selección. No se cobra dinero real.
 2. En **Mis pedidos**, mirá el estado y la fecha estimada ficticia. Tocá **Preguntar por este pedido** y escribí «¿Cuándo llega mi pedido?». El asistente local responde automáticamente con los datos de ese pedido, sin llamar a Ollama. No hay envío real.
-3. Para probar un reclamo, escribí «La mochila llegó en mal estado» en **Ayuda**, vinculando la mochila o su pedido. El asistente pedirá una foto. Adjuntá un JPG o PNG de hasta 2 MB en el chat. La foto se guarda sin metadatos en la base local; soporte puede verla. También se admite un PDF de texto pequeño (2 MB, 5 páginas), tratado como dato no confiable y sin conservar el archivo original.
-4. En la pantalla de soporte, abrí **Bandeja**, elegí la conversación y leé el chat. Para casos complejos se prepara una **Propuesta para revisar** privada. **Aprobar** o **editar** publica la respuesta en el chat del cliente; **rechazar** no la publica. Siempre escribí un motivo real. Si Ollama no está disponible, respondé manualmente en la caja inferior.
-5. En la pantalla del cliente, tocá **Actualizar mensajes** para ver la respuesta. Podés continuar el intercambio; queda en PostgreSQL y sigue disponible tras cerrar el navegador.
-6. Si soporte se equivoca, puede usar **Corregir este mensaje** en una respuesta escrita directamente. Para una propuesta publicada tras revisión de IA, usá **Análisis y revisión** → **Corregir una decisión anterior**. La versión anterior queda en el historial y la nueva aparece en el chat del cliente.
+3. Para probar un reclamo, escribí «La mochila llegó en mal estado» en **Ayuda**, vinculando la mochila o su pedido. Adjuntá una foto con **+** o escribí «no tengo imágenes» y después describí qué parte llegó dañada. El chat admite mensajes cortos, fotos JPG o PNG de hasta 2 MB y PDF de texto de hasta 2 MB y 5 páginas. La foto se guarda sin metadatos y acompaña al mensaje. Del PDF solo se guarda el texto extraído.
+4. En la pantalla de soporte, elegí el chat en **Bandeja**. Podés responder desde el cuadro de escritura. Si aparece una **Propuesta privada**, elegí **Enviar propuesta**, **Editar y enviar** o **Rechazar**. Indicá el motivo y confirmá. Si Ollama tarda o falla, el cuadro de escritura sigue disponible.
+5. Ambos historiales se actualizan solos cada pocos segundos. Podés continuar el intercambio desde el mismo cuadro. En **Mis pedidos** → **Abrir chat del pedido** retomás la conversación.
+6. Si soporte necesita cambiar una respuesta, abrí **Corregir una respuesta o ver el historial** en el mismo chat. La corrección ocupa el lugar de la respuesta original, cuya versión anterior queda en el historial.
 
 Para una prueba sencilla, el cliente puede escribir «Compré un auricular ficticio y no enciende». Soporte puede responder «¿Podés indicar el número de pedido? No compartas claves ni datos bancarios». El cliente puede contestar y soporte continuar o pedir una propuesta nueva a la IA.
 
@@ -62,8 +62,8 @@ La primera llamada al modelo puede tardar. Si el panel dice que la API no está 
 
 ## 4. Demostración con un cliente ficticio
 
-1. En el panel, abrí **Resumen**: verás los tickets de muestra.
-2. Abrí **Tickets** → **Crear ticket**. Elegí `Cliente demo 2` y escribí: `Necesito el comprobante de agosto para presentarlo en la contaduría`.
+1. En el panel, abrí **Evaluación** → **Resumen** para ver los tickets de muestra.
+2. Abrí **Evaluación** → **Tickets** → **Crear ticket**. Elegí `Cliente demo 2` y escribí `Necesito el comprobante de agosto para presentarlo en la contaduría`.
 3. Tocá **Crear ticket**. El panel mostrará el nuevo ID.
 4. Abrí **Análisis y revisión humana**. El ID recién creado debería estar precargado; comprobalo y tocá **Analizar ticket** una sola vez.
 5. Revisá la categoría, los documentos consultados, el borrador y la decisión automática. En **Registrar revisión**, aprobá, editá o rechazá según lo que realmente produjo el modelo. Escribí un motivo concreto y guardá la revisión. Si la ejecución está bloqueada, solo se puede rechazar.
