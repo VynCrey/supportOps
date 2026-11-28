@@ -12,10 +12,11 @@ generador del PDF están en `docs/entrega_final/`.
 Para copiar el programa a otra computadora Windows y usarlo de forma local,
 seguí [LEEME_NETBOOK.md](LEEME_NETBOOK.md). Incluye instalación inicial,
 arranque de la API y las dos pantallas, y una demostración ficticia. En
-**Conversaciones**, cliente y soporte intercambian mensajes que quedan en
+**Ayuda** y **Bandeja**, cliente y soporte intercambian mensajes que quedan en
 PostgreSQL. La IA puede preparar una propuesta sobre el último mensaje y el
-contexto reciente; el operador decide si publicarla. La sección **Simulación**
-se conserva como práctica rápida con tickets independientes.
+contexto reciente; el operador decide si publicarla. Las preguntas sencillas
+sobre precio o seguimiento simulado se responden automáticamente con datos de
+la base. Los casos ambiguos o delicados producen un borrador privado para soporte.
 `crear_paquete_netbook.py` genera el ZIP en la carpeta `proyectoFinal` usando
 solo archivos versionados y sin incluir contraseñas ni entornos locales.
 Después de abrir API y ambas pantallas, `05_COMPROBAR_DEMO.cmd` verifica
@@ -23,8 +24,8 @@ catálogo, modelo local y las direcciones de las dos interfaces.
 
 ## Sistema local de demostración
 
-- `schema.sql` define doce tablas: las siete originales y productos, pedidos,
-  reclamos, correcciones y mensajes de conversación.
+- `schema.sql` define catorce tablas: las siete originales, productos, pedidos,
+  reclamos, correcciones, mensajes, fotos y estado de preparación de borradores.
 - `bootstrap.py` crea la base `supportops_final` y carga una muestra ficticia:
   3 clientes, 6 tickets y 18 eventos.
 - `documentos` y `relaciones` se llenan con `cargar_kb.py` a partir de `kb.json`
@@ -39,10 +40,16 @@ catálogo, modelo local y las direcciones de las dos interfaces.
   hibrido sobre PostgreSQL). Si el archivo faltara, la evidencia es vacia y el
   resultado lo indica claramente.
 - La API incluye analisis de tickets, consulta de ejecuciones y revision humana.
-- `streamlit_app.py` ofrece la pantalla de soporte para leer conversaciones,
-  responder directamente, analizar con IA, revisar y rectificar.
-  `cliente_app.py` muestra el catálogo ficticio, registra pedidos y permite
-  continuar la conversación. El cliente no ve borradores internos.
+- `streamlit_app.py` ofrece una bandeja de soporte con el chat, fotos, borradores
+  y decisión humana en el mismo recorrido. `cliente_app.py` tiene tres rutas:
+  Tienda, Mis pedidos y Ayuda. El cliente nunca ve borradores internos.
+- Cada pedido ficticio conserva una fecha estimada de entrega y muestra un
+  estado simulado. `tienda_respuestas.py` contesta solo consultas simples
+  respaldadas por ese pedido o por la ficha pública de un producto.
+- Ante un producto dañado, la respuesta inicial pide una foto. La imagen se
+  recodifica sin metadatos, se guarda localmente en PostgreSQL y queda visible
+  para soporte. No se envía al modelo. Al adjuntarla se prepara un borrador
+  privado; si Ollama falla, el operador puede contestar manualmente.
 - `run.py` aplica el esquema al arrancar; al actualizar una base existente,
   incorpora la tabla de mensajes y conserva los primeros textos y respuestas
   revisadas de reclamos previos sin duplicarlos.
@@ -50,6 +57,9 @@ catálogo, modelo local y las direcciones de las dos interfaces.
   se guarda ni ejecuta. Las instrucciones dentro de consultas y PDF son datos
   no confiables; los pedidos de datos internos masivos pasan a revisión sin
   consultar al modelo.
+- La selección de cuentas es solo para una demostración local: no autentica
+  personas reales. La API escucha en `127.0.0.1` y nunca debe exponerse en
+  Internet ni recibir datos reales sin agregar autenticación y permisos.
 - `generar_datos.py` puede ampliar la muestra hasta 500 clientes, 20.000
   tickets y 60.000 eventos ficticios. No agrega documentos: esa parte corresponde
   a la base de conocimiento de Marco.

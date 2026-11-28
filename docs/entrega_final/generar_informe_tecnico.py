@@ -1,6 +1,7 @@
 """Genera el informe técnico final y su índice a partir del estado del proyecto."""
 
 from html import escape
+import os
 from pathlib import Path
 
 from reportlab.lib import colors
@@ -19,7 +20,8 @@ from reportlab.graphics.shapes import Drawing, Rect, String, Line, Polygon
 
 
 HERE = Path(__file__).resolve().parent
-OUT = HERE / "SupportOps_Informe_Tecnico_2026.pdf"
+OUT = Path(os.environ.get("SUPPORTOPS_REPORT_OUTPUT",
+                          str(HERE / "SupportOps_Informe_Tecnico_2026.pdf")))
 COVER = HERE / "portada_ia.png"
 TEAL = colors.HexColor("#006F73")
 TEAL_DARK = colors.HexColor("#07575A")
@@ -189,14 +191,14 @@ story.append(toc)
 newpage()
 
 h1("1. Resumen ejecutivo")
-p("SupportOps es un sistema local de demostración para una <b>tienda ficticia</b>. Ofrece dos pantallas: una para que un cliente de prueba consulte productos, registre compras simuladas y converse con soporte, y otra para que el operador lea y responda. Ollama puede proponer una respuesta apoyada en documentos; la persona decide si la publica. La conversación y sus decisiones quedan en PostgreSQL.")
+p("SupportOps es un sistema local para una <b>tienda ficticia</b> con dos pantallas: cliente y soporte. El cliente consulta productos, compra sin pago, ve el seguimiento simulado y conversa con soporte. Las preguntas sencillas reciben una respuesta automática basada en datos de PostgreSQL; Ollama prepara propuestas privadas para casos complejos. El operador decide qué publicar.")
 p("El proyecto reúne FastAPI, PostgreSQL, Streamlit, recuperación de conocimiento y un modelo de lenguaje ejecutado en la misma computadora. No necesita AWS, Docker ni mantener encendida otra PC. El repositorio de referencia es <link href='https://github.com/VynCrey/supportOps' color='#006F73'>github.com/VynCrey/supportOps</link>.")
 h2("1.1 Resultado de la entrega")
 table(["Componente", "Función en la demostración"], [
-    ["Pantalla de cliente", "Catálogo, compra simulada y chat persistente para reclamos, con PDF de respaldo acotado."],
-    ["Pantalla de soporte", "Chat, respuesta directa o propuesta de IA, citas, revisión humana y rectificación."],
-    ["API y datos", "Persistencia local de productos, pedidos, tickets, mensajes, documentos, ejecuciones y decisiones."],
-    ["Controles", "Revisión antes de mostrar respuestas, detección de pedidos de secretos, negativa a extraer datos internos y tratamiento de instrucciones externas como no confiables."],
+    ["Pantalla de cliente", "Tienda, pedidos con entrega estimada, chat persistente y adjuntos acotados de foto o PDF."],
+    ["Pantalla de soporte", "Bandeja de chat, respuesta directa o propuesta privada, revisión humana y rectificación."],
+    ["API y datos", "Persistencia local de productos, pedidos, fotos, mensajes, documentos, ejecuciones y decisiones."],
+    ["Controles", "Reglas para respuestas simples, revisión de propuestas complejas, detección de secretos, negativa a extraer datos internos y tratamiento de adjuntos como no confiables."],
 ], [49 * mm, 123 * mm])
 p("La palabra “terminado” se refiere al <b>prototipo académico local</b> descrito aquí. Los precios, clientes y compras son ficticios; no se conecta con pagos, mensajería ni bases de una empresa real. Esa frontera permite presentarlo completo y reproducible sin atribuirle una operación comercial que no realiza.")
 
@@ -209,6 +211,7 @@ bullet("La propuesta de IA no llega a la pantalla del cliente antes de una revis
 bullet("Cliente y soporte pueden continuar el mismo chat; el historial se conserva tras cerrar el navegador.")
 bullet("La respuesta final queda vinculada a ticket, ejecución, revisión y, si corresponde, corrección posterior.")
 bullet("Un pedido no consume dinero real; el inventario y los clientes son ficticios.")
+bullet("Las consultas simples sobre precio o entrega se contestan con datos del producto o del pedido asociado; las demás se derivan a soporte.")
 bullet("Una solicitud de datos internos masivos o una orden inyectada no se entrega al modelo como instrucción.")
 h2("2.3 Antecedentes y objetivos")
 p("El trabajo nació de prácticas de backend con Python y PostgreSQL. A esa base se sumaron una API, el flujo de agentes, recuperación de documentos, evaluación y pantallas de uso. No se declara una continuidad con el ejemplo de viajes que aparece en la plantilla institucional. El <b>objetivo general</b> es demostrar una atención ficticia asistida por IA, trazable y decidida por un operador. Los objetivos específicos son registrar casos, recuperar evidencia, redactar propuestas citadas, prevenir solicitudes inseguras y conservar revisiones y rectificaciones.")
@@ -226,15 +229,15 @@ table(["Capa", "Archivo o servicio", "Responsabilidad"], [
     ["Conocimiento", "retrieval.py / kb.json", "Recuperación léxica, por categoría e híbrida."],
 ], [30 * mm, 52 * mm, 90 * mm])
 h2("3.1 Recorrido de una consulta")
-p("Cliente → conversación ligada a un ticket → respuesta directa de soporte o análisis local → búsqueda documental → borrador con citas → controles de seguridad → revisión del operador → respuesta visible al cliente. El cliente puede continuar el mismo chat. Cada análisis guarda su resultado y traza; los borradores internos no se publican.")
+p("Cliente → conversación ligada a un ticket → respuesta automática acotada si hay datos suficientes. En otro caso: propuesta local → búsqueda documental → borrador con citas → controles de seguridad → revisión del operador → respuesta visible al cliente. Un reclamo por daño pide foto y queda abierto. Cada análisis guarda resultado y traza; los borradores internos no se publican.")
 
 h1("4. Datos y base PostgreSQL")
-p("PostgreSQL conserva las relaciones y permite filtrar, contar y auditar sin depender de la memoria del navegador. El esquema tiene doce tablas, incluida la de mensajes. <b>bootstrap.py</b> crea la muestra y <b>run.py</b> aplica el esquema al arrancar, también sobre bases ya existentes. El catálogo viene de <b>catalogo_demo.json</b>; repetir la carga no repone el stock consumido en pedidos simulados.")
+p("PostgreSQL conserva las relaciones y permite filtrar, contar y auditar sin depender de la memoria del navegador. El esquema tiene catorce tablas, incluidas mensajes, fotos y preparación de borradores. Cada pedido registra una entrega estimada ficticia. <b>bootstrap.py</b> crea la muestra y <b>run.py</b> aplica el esquema al arrancar, también sobre bases existentes. El catálogo viene de <b>catalogo_demo.json</b>; repetir la carga no repone el stock consumido.")
 table(["Grupo", "Tablas y uso"], [
     ["Operación", "clientes, tickets y eventos: quién consulta, qué ocurrió y cuándo."],
     ["Conocimiento", "documentos y relaciones: procedimientos y enlaces para recuperación."],
     ["IA y decisiones", "ejecuciones, revisiones y correcciones: salida del agente, decisión inicial y versiones posteriores."],
-    ["Tienda ficticia", "productos, pedidos, reclamos y mensajes_reclamo: catálogo, casos y chat persistente."],
+    ["Tienda ficticia", "productos, pedidos, reclamos, mensajes_reclamo, fotos_reclamo y borradores_pendientes."],
 ], [41 * mm, 131 * mm])
 h2("4.1 Muestras y conjuntos de evaluación")
 table(["Conjunto", "Cantidad", "Finalidad"], [
@@ -247,19 +250,19 @@ p("Los 20.000 tickets pertenecen a la <b>base local</b> donde se ejecutó genera
 
 h1("5. Pantalla del cliente")
 p("La vista de Tienda Faro presenta el catálogo, el precio y la disponibilidad ficticios. El cliente de prueba puede elegir un producto y registrar un pedido; el sistema reduce el stock dentro de una transacción y guarda el precio de ese momento. En “Mis pedidos” ve solo los pedidos del cliente seleccionado.")
-p("En “Conversaciones” puede iniciar un caso asociado a un pedido o producto y adjuntar un PDF de respaldo. Ese primer mensaje crea un ticket; los siguientes continúan el mismo caso. El chat muestra mensajes propios y respuestas publicadas por soporte, nunca borradores de IA. Un mensaje nuevo reabre el caso. Tras una rectificación se muestra la respuesta vigente.")
+p("En “Ayuda” puede iniciar un caso asociado a un pedido o producto y adjuntar una foto o PDF acotado. Ese primer mensaje crea un ticket; los siguientes continúan el mismo chat. El chat muestra respuestas automáticas claramente identificadas o mensajes publicados por soporte, nunca borradores privados. Un mensaje nuevo reabre el caso. Tras una rectificación se muestra la respuesta vigente.")
 h2("5.1 Ejemplo de uso")
 table(["Paso", "Acción", "Resultado"], [
-    ["1", "Elegir Cliente demo 2 y revisar Auricular Faro.", "Se muestran datos del catálogo ficticio."],
+    ["1", "Elegir Cliente demo 2 y revisar un producto.", "Se muestran datos del catálogo ficticio."],
     ["2", "Comprar una unidad (simulado).", "Se registra un pedido sin cobrar."],
-    ["3", "Reclamar: “El auricular dejó de encender”.", "Se crea un ticket ligado al pedido."],
-    ["4", "Soporte responde o revisa una propuesta de IA.", "El cliente no ve el borrador interno."],
-    ["5", "Actualizar Conversaciones y escribir otra consulta.", "Ambos lados continúan el mismo chat."],
+    ["3", "Preguntar “¿Cuándo llega mi pedido?”.", "Responde con fecha y estado ficticios del pedido."],
+    ["4", "Reclamar “Llegó en mal estado” y adjuntar foto.", "El asistente pide foto y soporte recibe el caso."],
+    ["5", "Soporte revisa y publica una propuesta.", "El cliente ve solo la respuesta aprobada o corregida."],
 ], [16 * mm, 70 * mm, 86 * mm])
 p("La selección del cliente en esta pantalla sirve para la <b>simulación local</b>; no constituye una identidad autenticada para un servicio público.")
 
 h1("6. Pantalla de soporte")
-p("El operador dispone de Resumen, Conversaciones, Productos y pedidos, Tickets, Análisis y revisión, y Simulación. En Conversaciones lee los mensajes del cliente y puede responder directamente. Para recibir ayuda de la IA abre el caso en Análisis y revisión: allí ve categoría, decisión automática, borrador, citas y evidencia antes de publicar.")
+p("El operador dispone de Bandeja, Productos y pedidos, Resumen, Análisis y revisión y Tickets. En Bandeja lee los mensajes y fotos, ve la propuesta privada cuando está lista y puede aprobarla, editarla o rechazarla con motivo. También puede responder directamente. La vista técnica muestra categoría, decisión, citas y evidencia.")
 h2("6.1 Decisión y corrección")
 table(["Acción", "Efecto"], [
     ["Aprobar", "Publica el texto del borrador después de escribir un motivo real."],
@@ -275,19 +278,21 @@ p("El análisis se divide en cuatro roles. <b>Triage</b> clasifica y señala dat
 h2("7.1 Documentos y citas")
 p("La base documental inicial contiene 56 piezas con identificadores KB-###. Para reclamos asociados a un producto, el análisis añade una ficha CAT-PR-### con datos actuales de ese producto y del pedido simulado. Si el reclamo no señala un producto, agrega CAT-CATALOGO con los ocho productos públicos. No expone la lista de clientes ni pedidos ajenos al modelo. El borrador solo puede citar IDs presentes en la evidencia de esa ejecución; una cita inventada bloquea la salida.")
 h2("7.2 Límites de la generación")
-p("El agente produce propuestas, no garantías de exactitud. Puede confundir categorías, elegir documentos poco pertinentes o redactar algo incompleto. Para un chat, recibe el último mensaje del cliente y hasta ocho mensajes recientes ya publicados; ninguna propuesta interna entra en ese contexto. Las consultas de precio simples usan datos de la ficha pública, siempre bajo revisión humana. La pantalla de Simulación conserva tickets independientes como práctica rápida.")
+p("El modelo produce propuestas, no garantías de exactitud. Puede confundir categorías o redactar algo incompleto. Recibe el último mensaje y hasta ocho mensajes recientes del mismo chat; ninguna propuesta interna entra en ese contexto. Las consultas simples de precio y seguimiento usan reglas y datos comprobados, sin modelo. Ante daño, el sistema pide foto y la propuesta permanece privada para revisión humana.")
 
 h1("8. Seguridad y límites de datos")
-p("Los controles se aplican en varias capas: validación de entradas, búsqueda limitada, esquema de citas, detector de solicitudes de secretos y decisión humana obligatoria. El programa no dispone de una herramienta para volcar tablas completas por una petición al agente. Las consultas explícitas para obtener toda la base de datos o todos los clientes, y las órdenes para ignorar instrucciones, se apartan del modelo; se conserva una propuesta de negativa para revisión humana.")
+p("Los controles se aplican en varias capas: validación de entradas, respuesta automática limitada a datos propios o públicos, búsqueda acotada, esquema de citas, detector de secretos y decisión humana para propuestas complejas. El agente no tiene una herramienta para volcar tablas completas. Las consultas para obtener la base, clientes, chats ajenos o todos los mensajes, y las órdenes para ignorar instrucciones, se apartan del modelo y pasan a revisión humana.")
 h2("8.1 PDF como dato no confiable")
 p("La pantalla del cliente acepta PDF de texto de hasta <b>2 MB y 5 páginas</b>. Extrae como máximo 2.500 caracteres, no conserva el archivo y no ejecuta contenido. Rechaza archivos cifrados, ilegibles o con formularios, enlaces, adjuntos o acciones activas. El texto se etiqueta como adjunto no confiable. Las instrucciones que intenten cambiar el comportamiento del agente se tratan como parte del reclamo y pasan a revisión, no como órdenes del sistema.")
-h2("8.2 Protección operativa")
+h2("8.2 Foto del producto")
+p("Ante daño o mal estado, el asistente pide una foto y deja el caso abierto. Se aceptan JPG y PNG pequeños. Pillow recodifica la imagen a JPEG y descarta metadatos antes de guardarla en la base local; soporte puede verla. La foto no se envía al modelo ni prueba por sí sola la causa o una garantía. Cuando está adjunta, se prepara un borrador privado para el operador.")
+h2("8.3 Protección operativa")
 bullet("No solicitar contraseñas, tokens ni códigos de verificación; los pedidos directos se detectan en texto, preguntas y faltantes.")
 bullet("No afirmar pagos, envíos, desbloqueos o reembolsos no verificados por la base de datos.")
 bullet("No mostrar el borrador crudo al cliente ni enviar mensajes por WhatsApp o correo.")
 bullet("Mantener la instalación en localhost. La interfaz de demostración no incluye autenticación ni autorización para Internet y no debe exponerse públicamente.")
 p("La revisión humana es un control efectivo de publicación, pero no reemplaza una evaluación de seguridad para un despliegue real. PostgreSQL y Ollama se ejecutan localmente; las contraseñas de la base no se guardan en el repositorio.")
-h2("8.3 Riesgos y recursos")
+h2("8.4 Riesgos y recursos")
 table(["Recurso o riesgo", "Tratamiento en el proyecto"], [
     ["Procesador y memoria", "El modelo local puede tardar en una netbook; se usa una variante de 3B y una consulta por vez."],
     ["Dependencia de PostgreSQL y Ollama", "La preparación comprueba instalación y la API comunica fallas de disponibilidad."],
@@ -296,7 +301,7 @@ table(["Recurso o riesgo", "Tratamiento en el proyecto"], [
 ], [50 * mm, 122 * mm])
 
 h1("9. Pruebas y resultados")
-p("La revisión automatizada del <b>25/11/2026</b> ejecutó <b>63 pruebas: 63 correctas</b>. Incluye análisis, recuperación, catálogo, PDF, chat de ambas pantallas y publicación humana. Una integración aislada con PostgreSQL recorrió creación del caso, mensajes, revisión, rechazo de propuestas viejas y rectificaciones; la base real del usuario no se tocó. Estas verificaciones no prueban el acierto del modelo en todas las preguntas posibles.")
+p("La revisión automatizada del <b>27/11/2026</b> ejecutó <b>69 pruebas: 69 correctas</b>. Incluye análisis, recuperación, catálogo, PDF, fotos, chat y respuestas automáticas acotadas. Una integración aislada con PostgreSQL recorrió pedido, entrega estimada, respuesta automática, daño, foto y borrador privado; también se comprobó la migración desde el esquema anterior. La base real del usuario no se tocó. Estas verificaciones no prueban el acierto del modelo en todas las preguntas posibles.")
 h2("9.1 Evaluación histórica H5")
 p("La corrida H5 del <b>27/10/2026</b> evaluó 20 tickets reservados sobre una versión anterior. Acertó la categoría en 14/20, obtuvo evidencia aceptable o abstención correcta en 9/20, y una decisión automática dentro del rango esperado en 17/20. Los tres criterios se cumplieron juntos en <b>7/20</b>. Algunos borradores de esos siete también requerían corrección humana. T01 y T02 se rechazaron; T03 se aprobó; T20 se editó. Los registros permanecen en docs/eval/h5_v2.md y su CSV.")
 h2("9.2 Recuperación documental")
@@ -310,7 +315,7 @@ h2("9.3 Fallas controladas")
 p("Las pruebas del proyecto verifican, entre otros casos, HTTP 409 al revisar dos veces, 422 para un motivo de ejemplo, 503 si el modelo o la KB no están disponibles y 502 si la salida del análisis es inválida. Los fallos de modelo no se guardan como ejecuciones válidas inventadas.")
 
 h1("10. Instalación y demostración en netbook")
-p("La copia portable requiere Windows de 64 bits, Python 3.11, PostgreSQL y Ollama. El archivo requirements.txt instala FastAPI, psycopg, Uvicorn, Streamlit y pypdf; Ollama descarga el modelo <b>qwen2.5:3b</b>. La primera preparación requiere Internet para descargar bibliotecas y modelo. Después, la API, la base, el modelo y las dos interfaces corren en la netbook sin la computadora original.")
+p("La copia portable requiere Windows de 64 bits, Python 3.11, PostgreSQL y Ollama. El archivo requirements.txt instala FastAPI, psycopg, Uvicorn, Streamlit, pypdf y Pillow; Ollama descarga <b>qwen2.5:3b</b>. La primera preparación requiere Internet para descargar bibliotecas y modelo. Después, la API, la base, el modelo y las dos interfaces corren en la netbook sin la computadora original.")
 table(["Orden", "Archivo", "Qué hace"], [
     ["1", "01_PREPARAR_NETBOOK.cmd", "Crea el entorno, esquema y datos ficticios; carga KB y modelo."],
     ["2", "02_INICIAR_API.cmd", "Inicia FastAPI en 127.0.0.1:8000."],
@@ -338,7 +343,7 @@ p("El proyecto aplicó modelado relacional, transacciones, API REST, validación
 h2("12.2 Evidencia reproducible")
 table(["Referencia", "Contenido"], [
     ["Repositorio", "<link href='https://github.com/VynCrey/supportOps' color='#006F73'>https://github.com/VynCrey/supportOps</link>"],
-    ["Código", "main.py, db.py, analysis.py, safety.py, cliente_app.py, streamlit_app.py, pdf_guard.py."],
+    ["Código", "main.py, db.py, analysis.py, safety.py, tienda_respuestas.py, foto_guard.py, cliente_app.py, streamlit_app.py."],
     ["Datos", "schema.sql, catalogo_demo.json, kb.json, generar_datos.py."],
     ["Pruebas", "test_analysis.py, test_marco.py, test_tienda.py, test_chat.py, test_cliente_app.py y docs/eval/."],
     ["Instalación", "LEEME_NETBOOK.md y scripts numerados 01 a 05."],

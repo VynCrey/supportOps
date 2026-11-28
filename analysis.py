@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from knowledge_adapter import KB_CONECTADA, retrieve
 from llm import chat
 from safety import motivo_consulta_restringida, pide_credenciales
+from tienda_respuestas import consulta_danio
 
 
 class TicketNoEncontrado(Exception):
@@ -83,7 +84,8 @@ def _respuesta_catalogo(consulta: str, productos: list[dict]) -> str | None:
     normalizada = "".join(c for c in normalizada if not unicodedata.combining(c))
     if not re.search(r"\b(?:precio|cuanto|cuesta|costar|productos|venden|catalogo|disponib)\w*\b", normalizada):
         return None
-    if re.search(r"\b(?:pedido|reclamo|problema|falla|error|roto|devolucion|cobro)\w*\b", normalizada):
+    if re.search(r"\b(?:pedido|reclamo|problema|falla|error|roto|danado|"
+                 r"mal estado|devolucion|cobro|entrega|envio)\w*\b", normalizada):
         return None
     elegidos = []
     for producto in productos:
@@ -159,6 +161,43 @@ def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve) -> dict:
         ejecucion_id = datos.guardar_ejecucion(ticket_id, resultado)
         return {**resultado, "ejecucion_id": ejecucion_id}
 
+    contexto_danio = (datos.contexto_reclamo(ticket_id)
+                     if hasattr(datos, "contexto_reclamo") else None)
+    historial_danio = " ".join(
+        m.get("texto", "") for m in (conversacion or {}).get("mensajes", [])
+        if m.get("autor") == "cliente"
+    )
+    if contexto_danio and (consulta_danio(ticket["texto"]) or
+                          (ticket["texto"] == "Adjunté una foto del producto." and
+                           consulta_danio(historial_danio))):
+        fotos = (datos.fotos_reclamo(ticket_id)
+                 if hasattr(datos, "fotos_reclamo") else []) or []
+        producto = contexto_danio.get("producto") or "el producto"
+        if fotos:
+            texto = (f"Lamento que {producto} haya llegado en mal estado. "
+                     "Recibimos la foto y soporte revisará el caso. "
+                     "Te informaremos los próximos pasos por esta conversación.")
+        else:
+            texto = (f"Lamento que {producto} haya llegado en mal estado. "
+                     "Adjuntá una foto del daño para que podamos revisarlo. "
+                     "No compartas datos de pago ni contraseñas.")
+        resultado = {
+            "ticket_id": ticket_id, "mensaje_cliente_id": mensaje_cliente_id,
+            "ultimo_mensaje_id": ultimo_mensaje_id,
+            "triage": {"categoria": "general", "consulta": "producto dañado",
+                       "faltantes": [] if fotos else ["foto del producto"]},
+            "plan_busqueda": {"herramienta": "lexical", "consulta": "producto dañado",
+                              "motivo": "La incidencia requiere revisión humana"},
+            "evidencia": [],
+            "borrador": {"texto": texto, "citas": [], "preguntas": []},
+            "supervision": {"decision": "revisar",
+                            "motivos": ["Verificar el daño y el pedido asociado"]},
+            "traza": [{"control": "incidencia_producto", "fotos": len(fotos)}],
+            "modo": "regla", "base_conocimiento": "no_consultada",
+        }
+        ejecucion_id = datos.guardar_ejecucion(ticket_id, resultado)
+        return {**resultado, "ejecucion_id": ejecucion_id}
+
     # La etiqueta real y la familia sintetica no llegan al modelo. Tampoco el ID:
     # el borrador lo citaba como si fuera un documento, y el mismo texto daba otro
     # resultado segun el numero del ticket.
@@ -187,7 +226,10 @@ def analyze(ticket_id: int, datos, llm=chat, recuperar=retrieve) -> dict:
                 f"Precio ficticio actual: {contexto['precio']}. "
                 f"Disponibilidad ficticia actual: {contexto['stock']} unidades. "
                 + (f"Pedido simulado asociado: estado {contexto['estado_pedido']}, "
-                   f"cantidad {contexto['cantidad']}. " if contexto.get("pedido_id") else "")
+                   f"cantidad {contexto['cantidad']}, estado de envío "
+                   f"{contexto.get('estado_envio', 'sin informar')}, fecha estimada "
+                   f"{contexto.get('entrega_estimada', 'sin informar')}. "
+                   if contexto.get("pedido_id") else "")
                 + "No afirmar pagos, envíos ni garantías que no consten aquí."
             ),
         }

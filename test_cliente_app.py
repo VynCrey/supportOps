@@ -19,7 +19,8 @@ class ClienteAppTest(unittest.TestCase):
             if ruta == "/health":
                 return {"estado": "ok", "base": "conectada"}
             if ruta == "/clientes":
-                return {"clientes": [{"id": 1, "nombre": "Cliente demo", "plan": "Basic"}]}
+                return {"clientes": [{"id": 1, "nombre": "Cliente demo 1", "plan": "Basic"},
+                                     {"id": 497, "nombre": "Cliente sintetico 497", "plan": "Pro"}]}
             if ruta == "/productos":
                 return {"productos": [producto]}
             if ruta == "/pedidos":
@@ -43,6 +44,8 @@ class ClienteAppTest(unittest.TestCase):
                     mensajes.append({"autor": "soporte", "texto": "Respuesta revisada por soporte",
                                      "tipo": "revision"})
                 return {"mensajes": mensajes}
+            if ruta == "/reclamos/12/fotos":
+                return {"fotos": []}
             raise AssertionError(ruta)
 
         def post(ruta, cuerpo=None, **_opciones):
@@ -51,6 +54,8 @@ class ClienteAppTest(unittest.TestCase):
                 estado["pedidos"].append({
                     "id": 7, "producto": producto["nombre"],
                     "cantidad": 1, "total": producto["precio"],
+                    "estado_envio": "en preparación",
+                    "entrega_estimada": "2026-12-02T00:00:00Z",
                 })
                 return {"id": 7}
             if ruta == "/reclamos/12/mensajes/cliente":
@@ -63,19 +68,18 @@ class ClienteAppTest(unittest.TestCase):
                 Path(__file__).with_name("cliente_app.py"), default_timeout=10,
             )
             app.run()
-            next(b for b in app.button if b.label == "Comprar (simulado)").click().run()
+            next(b for b in app.button if b.label == "Comprar").click().run()
             self.assertFalse(app.exception)
-            self.assertTrue(any("Pedido simulado #7" in x.value for x in app.success))
+            self.assertTrue(any("Pedido ficticio #7" in x.value for x in app.success))
 
-            app.radio[0].set_value("Mis pedidos").run()
-            self.assertTrue(any("Pedido #7" in x.value for x in app.markdown))
+            self.assertTrue(any("Pedido #7" in x.value for x in app.subheader))
 
-            app.radio[0].set_value("Conversaciones").run()
+            app.segmented_control[0].set_value("Ayuda").run()
             self.assertFalse(any("BORRADOR INTERNO" in x.value for x in app.markdown))
             app.chat_input[0].set_value("¿Me pueden ayudar con la factura?").run()
             self.assertEqual(estado["mensaje_cliente"], "¿Me pueden ayudar con la factura?")
             estado["revisado"] = True
-            next(b for b in app.button if b.label == "Actualizar conversación").click().run()
+            next(b for b in app.button if b.label == "Actualizar mensajes").click().run()
             self.assertTrue(any("Respuesta revisada por soporte" in x.value
                                 for x in app.markdown))
             self.assertFalse(app.exception)

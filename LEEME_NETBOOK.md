@@ -43,11 +43,12 @@ Esperá el mensaje **«Preparacion terminada»**. Si falla, leé el error de la 
 
 ## Demostración de las dos pantallas
 
-1. En la pantalla del cliente, elegí un cliente ficticio, mirá el catálogo y hacé una compra simulada. No se cobra dinero real.
-2. En **Conversaciones** → **Iniciar una conversación nueva**, seleccioná el pedido o producto si corresponde y escribí el primer mensaje. También podés adjuntar un PDF de texto de hasta 2 MB y 5 páginas. El archivo no se conserva; solo se agrega el texto extraído al ticket como material no confiable.
-3. En la pantalla de soporte, abrí **Conversaciones**, elegí el ticket y leé el chat. Podés escribir una respuesta propia en la caja inferior. Se verá en la pantalla del cliente al actualizarla. Si preferís ayuda de la IA, tocá **Preparar propuesta con IA**: se abre **Análisis y revisión**, donde leés el borrador y las fuentes. **Aprobar** o **editar** publica la respuesta; **rechazar** no publica el borrador. Siempre escribí un motivo.
-4. En la pantalla del cliente, tocá **Actualizar conversación** y continuá el chat desde la caja inferior. Soporte verá el nuevo mensaje al tocar **Actualizar conversaciones**. Podés repetir el intercambio cuantas veces quieras; queda guardado en PostgreSQL y sigue disponible tras cerrar el navegador.
-5. Si soporte se equivoca, puede usar **Corregir este mensaje** en una respuesta escrita directamente. Para una propuesta publicada tras revisión de IA, usá **Análisis y revisión** → **Corregir una decisión anterior**. La versión anterior queda en el historial y la nueva aparece en el chat del cliente.
+1. En la pantalla del cliente, elegí una de las tres cuentas de prueba, mirá **Tienda** y hacé una compra simulada. Los otros 500 clientes de la muestra estadística no aparecen en esta selección. No se cobra dinero real.
+2. En **Mis pedidos**, mirá el estado y la fecha estimada ficticia. Tocá **Preguntar por este pedido** y escribí «¿Cuándo llega mi pedido?». El asistente local responde automáticamente con los datos de ese pedido, sin llamar a Ollama. No hay envío real.
+3. Para probar un reclamo, escribí «La mochila llegó en mal estado» en **Ayuda**, vinculando la mochila o su pedido. El asistente pedirá una foto. Adjuntá un JPG o PNG de hasta 2 MB en el chat. La foto se guarda sin metadatos en la base local; soporte puede verla. También se admite un PDF de texto pequeño (2 MB, 5 páginas), tratado como dato no confiable y sin conservar el archivo original.
+4. En la pantalla de soporte, abrí **Bandeja**, elegí la conversación y leé el chat. Para casos complejos se prepara una **Propuesta para revisar** privada. **Aprobar** o **editar** publica la respuesta en el chat del cliente; **rechazar** no la publica. Siempre escribí un motivo real. Si Ollama no está disponible, respondé manualmente en la caja inferior.
+5. En la pantalla del cliente, tocá **Actualizar mensajes** para ver la respuesta. Podés continuar el intercambio; queda en PostgreSQL y sigue disponible tras cerrar el navegador.
+6. Si soporte se equivoca, puede usar **Corregir este mensaje** en una respuesta escrita directamente. Para una propuesta publicada tras revisión de IA, usá **Análisis y revisión** → **Corregir una decisión anterior**. La versión anterior queda en el historial y la nueva aparece en el chat del cliente.
 
 Para una prueba sencilla, el cliente puede escribir «Compré un auricular ficticio y no enciende». Soporte puede responder «¿Podés indicar el número de pedido? No compartas claves ni datos bancarios». El cliente puede contestar y soporte continuar o pedir una propuesta nueva a la IA.
 
@@ -67,13 +68,11 @@ La primera llamada al modelo puede tardar. Si el panel dice que la API no está 
 4. Abrí **Análisis y revisión humana**. El ID recién creado debería estar precargado; comprobalo y tocá **Analizar ticket** una sola vez.
 5. Revisá la categoría, los documentos consultados, el borrador y la decisión automática. En **Registrar revisión**, aprobá, editá o rechazá según lo que realmente produjo el modelo. Escribí un motivo concreto y guardá la revisión. Si la ejecución está bloqueada, solo se puede rechazar.
 
-Esta sección de tickets de práctica no publica en una conversación. Si analizás un reclamo abierto desde **Conversaciones**, aprobar o editar sí publica la respuesta en el chat ficticio local. Como el modelo genera texto, sus respuestas pueden variar; la demostración no garantiza una aprobación automática.
+Esta sección de tickets de práctica no publica en una conversación. Si revisás un reclamo desde **Bandeja**, aprobar o editar sí publica la respuesta en el chat ficticio local. Como el modelo genera texto, sus respuestas pueden variar.
 
-## 5. Simular varias consultas como una conversación
+## 5. Varias consultas en una conversación
 
-En el panel abrí **Simulación** y elegí un cliente ficticio. Escribí una pregunta como si fueras ese cliente. Tocá **Pedir propuesta a la IA** y, como operador, revisá la respuesta, las citas y los documentos. Podés **aprobar**, **editar** la respuesta o **rechazar** la propuesta, siempre con un motivo. Al guardar, escribí otra pregunta y repetí el ciclo tantas veces como quieras.
-
-Cada pregunta crea un ticket y se analiza **por separado**: el modelo no recuerda los mensajes anteriores. La conversación que ves en pantalla se conserva solo mientras esa pestaña siga abierta; los tickets, análisis y revisiones sí quedan en PostgreSQL. La respuesta aprobada o editada aparece en el panel como simulación, pero no se envía fuera de la computadora. Si el sistema bloquea una propuesta, solo permite rechazarla.
+En **Ayuda**, abrí un chat existente y escribí otro mensaje. El análisis usa el último mensaje del cliente y el contexto reciente del mismo chat. Una consulta sencilla de precio o seguimiento obtiene una respuesta automática basada en datos ficticios. Las demás quedan para revisión de soporte. Si el modelo falla, el chat persiste y el operador puede responder manualmente. La respuesta no sale de esta computadora.
 
 ## Problemas frecuentes
 

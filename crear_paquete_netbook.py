@@ -18,7 +18,8 @@ REQUERIDOS = {
     "03_ABRIR_PANEL.cmd", "04_ABRIR_CLIENTE.cmd",
     "05_COMPROBAR_DEMO.cmd", "verificar_netbook.py",
     "catalogo_demo.json", "kb.json", "requirements.txt", "schema.sql",
-    "cliente_app.py", "streamlit_app.py", "pdf_guard.py",
+    "cliente_app.py", "streamlit_app.py", "pdf_guard.py", "foto_guard.py",
+    "tienda_respuestas.py",
     "docs/entrega_final/SupportOps_Informe_Tecnico_2026.pdf",
     "docs/entrega_final/SupportOps_Informe_Proyecto_Integrador_2026.pdf",
 }

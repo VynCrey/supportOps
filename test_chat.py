@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from fastapi import HTTPException
+from fastapi import BackgroundTasks, HTTPException
 from streamlit.testing.v1 import AppTest
 
 from analysis import analyze
@@ -74,6 +74,23 @@ class ChatTest(unittest.TestCase):
                 self.mensajes.append(mensaje)
                 return mensaje
 
+            def contexto_conversacion(self, ticket_id):
+                ultimo = next(m for m in reversed(self.mensajes) if m["autor"] == "cliente")
+                return {"ultimo_texto_cliente": ultimo["texto"],
+                        "mensaje_cliente_id": ultimo["id"]}
+
+            def contexto_reclamo(self, ticket_id):
+                return {}
+
+            def pedido_del_reclamo(self, ticket_id):
+                return None
+
+            def fotos_reclamo(self, ticket_id):
+                return []
+
+            def registrar_borrador_pendiente(self, ticket_id, mensaje_id):
+                pass
+
             def enviar_mensaje_soporte(self, ticket_id, texto):
                 mensaje = {"id": 3, "autor": "soporte", "texto": texto, "tipo": "mensaje"}
                 self.mensajes.append(mensaje)
@@ -96,7 +113,8 @@ class ChatTest(unittest.TestCase):
         self.assertEqual(error.exception.status_code, 404)
         self.assertEqual(len(rutas[base](7, cliente_id=2)["mensajes"]), 1)
         rutas[base + "/cliente"](
-            7, MensajeCliente(cliente_id=2, texto="¿Podés ayudarme con esto?"))
+            7, MensajeCliente(cliente_id=2, texto="¿Podés ayudarme con esto?"),
+            BackgroundTasks())
         rutas[base + "/soporte"](
             7, MensajeSoporte(texto="Sí, revisaremos el caso ficticio."))
         rutas[base + "/{mensaje_id}/rectificar"](
@@ -125,6 +143,10 @@ class ChatTest(unittest.TestCase):
                                       "pedido_id": None}]}
             if ruta == "/reclamos/7/mensajes":
                 return {"mensajes": estado["mensajes"]}
+            if ruta == "/reclamos/7/fotos":
+                return {"fotos": []}
+            if ruta == "/reclamos/7/propuesta":
+                return {"estado": None}
             if ruta == "/reclamos/7/mensajes/historial":
                 return {"mensajes": [
                     {**m, "creado": "2026-11-25", "vigente": True, "motivo": None}
@@ -157,12 +179,12 @@ class ChatTest(unittest.TestCase):
             app = AppTest.from_file(Path(__file__).with_name("streamlit_app.py"),
                                     default_timeout=10)
             app.run()
-            app.radio[0].set_value("Conversaciones").run()
+            app.radio[0].set_value("Bandeja").run()
             self.assertEqual(len(app.chat_message), 1)
             app.chat_input[0].set_value("Podemos revisar ese producto ficticio.").run()
             self.assertEqual(estado["enviado"], "Podemos revisar ese producto ficticio.")
             self.assertEqual(len(app.chat_message), 2)
-            next(b for b in app.button if b.label == "Preparar propuesta con IA").click().run()
+            next(b for b in app.button if b.label == "Volver a preparar propuesta").click().run()
             self.assertEqual(estado["analisis"], 9)
             self.assertTrue(any("Propuesta interna" in m.value for m in app.markdown))
             self.assertFalse(app.exception)

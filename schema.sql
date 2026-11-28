@@ -86,8 +86,16 @@ CREATE TABLE IF NOT EXISTS pedidos (
     cantidad INTEGER NOT NULL CHECK (cantidad BETWEEN 1 AND 10),
     precio_unitario NUMERIC(10, 2) NOT NULL CHECK (precio_unitario >= 0),
     estado TEXT NOT NULL DEFAULT 'simulado' CHECK (estado = 'simulado'),
-    creado TIMESTAMPTZ NOT NULL DEFAULT now()
+    creado TIMESTAMPTZ NOT NULL DEFAULT now(),
+    entrega_estimada TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '5 days')
 );
+
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS entrega_estimada TIMESTAMPTZ;
+ALTER TABLE pedidos ALTER COLUMN entrega_estimada
+SET DEFAULT (now() + INTERVAL '5 days');
+UPDATE pedidos SET entrega_estimada = creado + INTERVAL '5 days'
+WHERE entrega_estimada IS NULL;
+ALTER TABLE pedidos ALTER COLUMN entrega_estimada SET NOT NULL;
 
 CREATE INDEX IF NOT EXISTS ix_pedidos_cliente ON pedidos(cliente_id);
 
@@ -125,7 +133,29 @@ CREATE TABLE IF NOT EXISTS mensajes_reclamo (
     motivo TEXT,
     vigente BOOLEAN NOT NULL DEFAULT TRUE,
     tipo TEXT NOT NULL DEFAULT 'mensaje'
-        CHECK (tipo IN ('inicio', 'mensaje', 'revision', 'rectificacion'))
+        CHECK (tipo IN ('inicio', 'mensaje', 'revision', 'rectificacion', 'automatica'))
+);
+
+ALTER TABLE mensajes_reclamo DROP CONSTRAINT IF EXISTS mensajes_reclamo_tipo_check;
+ALTER TABLE mensajes_reclamo ADD CONSTRAINT mensajes_reclamo_tipo_check
+CHECK (tipo IN ('inicio', 'mensaje', 'revision', 'rectificacion', 'automatica'));
+
+CREATE TABLE IF NOT EXISTS fotos_reclamo (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ticket_id BIGINT NOT NULL REFERENCES reclamos(ticket_id),
+    cliente_id BIGINT NOT NULL REFERENCES clientes(id),
+    mime TEXT NOT NULL CHECK (mime IN ('image/jpeg', 'image/png')),
+    datos BYTEA NOT NULL,
+    creado TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS borradores_pendientes (
+    mensaje_id BIGINT PRIMARY KEY REFERENCES mensajes_reclamo(id),
+    ticket_id BIGINT NOT NULL REFERENCES reclamos(ticket_id),
+    estado TEXT NOT NULL CHECK (estado IN ('preparando', 'listo', 'error')),
+    ejecucion_id BIGINT REFERENCES ejecuciones(id),
+    detalle TEXT NOT NULL DEFAULT '',
+    actualizado TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS ix_mensajes_reclamo_ticket
