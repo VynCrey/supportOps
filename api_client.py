@@ -34,6 +34,8 @@ def solicitar(metodo: str, ruta: str, *, parametros: dict | None = None,
             detalle = json.load(error).get("detail", "Error de la API")
         except (ValueError, OSError):
             detalle = "Error de la API"
+        if isinstance(detalle, list):
+            detalle = " · ".join(e.get("msg", "Revisá los datos enviados") for e in detalle[:3])
         raise APIError(f"HTTP {error.code}: {detalle}") from error
     except (URLError, TimeoutError) as error:
         raise APIError("No se pudo conectar con la API local") from error

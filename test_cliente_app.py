@@ -28,24 +28,20 @@ class ClienteAppTest(unittest.TestCase):
             if ruta == "/reclamos":
                 return {"reclamos": [{
                     "id": 4, "ticket_id": 12, "estado": "abierto",
-                    "producto": None, "texto": "No encuentro mi factura ficticia",
+                    "producto": None, "pedido_id": 7, "texto": "No encuentro mi factura ficticia",
                 }]}
-            if ruta == "/reclamos/12/respuesta":
-                return ({"estado": "respondido", "texto": "Respuesta revisada por soporte",
-                         "version": 1, "corregida": False} if estado["revisado"]
-                        else {"estado": "pendiente", "texto": "BORRADOR INTERNO"})
-            if ruta == "/reclamos/12/mensajes":
-                mensajes = [{"autor": "cliente", "texto": "No encuentro mi factura ficticia",
+            if ruta == "/reclamos/12/chat":
+                self.assertEqual(_parametros["cliente_id"], 1)
+                mensajes = [{"id": 1, "autor": "cliente", "texto": "No encuentro mi factura ficticia",
                              "tipo": "inicio"}]
                 if estado["mensaje_cliente"]:
-                    mensajes.append({"autor": "cliente", "texto": estado["mensaje_cliente"],
+                    mensajes.append({"id": 2, "autor": "cliente", "texto": estado["mensaje_cliente"],
                                      "tipo": "mensaje"})
                 if estado["revisado"]:
-                    mensajes.append({"autor": "soporte", "texto": "Respuesta revisada por soporte",
+                    mensajes.append({"id": 3, "autor": "soporte", "texto": "Respuesta revisada por soporte",
                                      "tipo": "revision"})
-                return {"mensajes": mensajes}
-            if ruta == "/reclamos/12/fotos":
-                return {"fotos": []}
+                return {"mensajes": mensajes, "fotos": [], "ticket_id": 12,
+                        "estado": "resuelto" if estado["revisado"] else "abierto"}
             raise AssertionError(ruta)
 
         def post(ruta, cuerpo=None, **_opciones):
@@ -74,14 +70,14 @@ class ClienteAppTest(unittest.TestCase):
 
             self.assertTrue(any("Pedido #7" in x.value for x in app.subheader))
 
-            app.segmented_control[0].set_value("Ayuda").run()
-            self.assertFalse(any("BORRADOR INTERNO" in x.value for x in app.markdown))
-            app.chat_input[0].set_value("¿Me pueden ayudar con la factura?").run()
-            self.assertEqual(estado["mensaje_cliente"], "¿Me pueden ayudar con la factura?")
+            next(b for b in app.button if b.label == "Abrir chat del pedido").click().run()
+            self.assertEqual(len(app.chat_input), 1)
+            app.chat_input[0].set_value("Sí").run()
+            self.assertEqual(estado["mensaje_cliente"], "Sí")
             estado["revisado"] = True
-            next(b for b in app.button if b.label == "Actualizar mensajes").click().run()
-            self.assertTrue(any("Respuesta revisada por soporte" in x.value
-                                for x in app.markdown))
+            app.run()
+            self.assertTrue(any("Respuesta revisada por soporte" in x.proto.body
+                                for x in app.get("html")))
             self.assertFalse(app.exception)
 
 

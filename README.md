@@ -12,8 +12,8 @@ generador del PDF están en `docs/entrega_final/`.
 Para copiar el programa a otra computadora Windows y usarlo de forma local,
 seguí [LEEME_NETBOOK.md](LEEME_NETBOOK.md). Incluye instalación inicial,
 arranque de la API y las dos pantallas, y una demostración ficticia. En
-**Ayuda** y **Bandeja**, cliente y soporte intercambian mensajes que quedan en
-PostgreSQL. La IA puede preparar una propuesta sobre el último mensaje y el
+**Ayuda** y **Bandeja**, cliente y soporte intercambian mensajes que se actualizan
+solos en pantalla y quedan en PostgreSQL. La IA puede preparar una propuesta sobre el último mensaje y el
 contexto reciente; el operador decide si publicarla. Las preguntas sencillas
 sobre precio o seguimiento simulado se responden automáticamente con datos de
 la base. Los casos ambiguos o delicados producen un borrador privado para soporte.
@@ -46,7 +46,8 @@ catálogo, modelo local y las direcciones de las dos interfaces.
 - Cada pedido ficticio conserva una fecha estimada de entrega y muestra un
   estado simulado. `tienda_respuestas.py` contesta solo consultas simples
   respaldadas por ese pedido o por la ficha pública de un producto.
-- Ante un producto dañado, la respuesta inicial pide una foto. La imagen se
+- Ante un producto dañado, el asistente pide una foto o una descripción del daño.
+  Si el cliente dice que no tiene foto, la conversación sigue con lo que pueda describir. La imagen se
   recodifica sin metadatos, se guarda localmente en PostgreSQL y queda visible
   para soporte. No se envía al modelo. Al adjuntarla se prepara un borrador
   privado; si Ollama falla, el operador puede contestar manualmente.
